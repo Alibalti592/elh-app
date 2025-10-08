@@ -1,0 +1,112 @@
+{% use "bootstrap_4_layout.html.twig" %}
+
+{# Labels #}
+
+{% block form_label -%}
+  {% set helpText = '' %}
+  {% for attrname,attrvalue in attr %}
+    {% if attrname == 'help' %}{% set helpText = attrvalue %}{% endif %}
+  {% endfor %}
+
+  {%- if label is same as(false) -%}
+    <div class="{{ block('form_label_class') }}"></div>
+  {%- else -%}
+    {% if helpText != '' %}
+      {% set label_attr = label_attr|merge({ 'data-toggle':  "tooltip", 'data-trigger' : 'click', 'data-html' : 'true', 'title': helpText, 'data-placement': 'right'}) %}
+    {% endif %}
+    {%- if expanded is not defined or not expanded -%}
+      {%- set label_attr = label_attr|merge({class: (label_attr.class|default('') ~ ' col-form-label')|trim}) -%}
+    {%- endif -%}
+    {%- set label_attr = label_attr|merge({class: (label_attr.class|default('') ~ ' ' ~ block('form_label_class'))|trim}) -%}
+    {{- parent() -}}
+  {%- endif -%}
+{%- endblock form_label %}
+
+{% block form_label_class -%}
+  {% if attr['type'] is defined and (attr['type'] == 'labels-single-show' or attr['type'] == 'labels' or attr['type'] == 'number') %}
+    text-center {% if attr['type'] == 'labels-single-show' %}p-0{% endif %}
+  {% endif %}
+{%- endblock form_label_class %}
+
+
+{#SET LABEL AS PLACEHOLDER#}
+{%- block form_widget_simple -%}
+  {%- set type = type|default('text') -%}
+  {% if type is not defined or 'file' != type %}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' form-control')|trim}) -%}
+  {% endif %}
+  <input type="{{ type }}" {{ block('widget_attributes') }} {% if value is not empty %}value="{{ value }}" {% endif %}
+         {% if placeholder is defined and  placeholder %}placeholder="{{ label|trans({}, translation_domain) }}{% endif %}"/>
+{%- endblock form_widget_simple -%}
+
+{# Rows #}
+{% block form_row -%}
+  {%- if expanded is defined and expanded -%}
+    {{ block('fieldset_form_row') }}
+  {%- else -%}
+    {% set classGroup = '' %}
+    {% if attr.classGroup is defined %}
+      {% set classGroup = attr.classGroup  %}
+    {% endif %}
+    <div class="form-group {{ classGroup }}{% if (not compound or force_error|default(false)) and not valid %} is-invalid{% endif %}">
+      <div class="{% if icon is defined %}group-with-icon{% endif %}">
+        {% if nolabel is defined and nolabel %}
+        {% else %}
+          {{- form_label(form) -}}
+        {% endif %}
+        <div class="input-group">
+          {% if icon is defined %}
+            <span class="input-group-addon"><i class="{{ icon }}"></i></span>
+          {% endif %}
+          {{- form_widget(form) -}}
+
+        </div>
+        {{- form_errors(form) -}}
+      </div>
+    </div>
+  {%- endif -%}
+{%- endblock form_row %}
+
+{% block fieldset_form_row -%}
+  <fieldset class="form-group">
+    <div class="row{% if (not compound or force_error|default(false)) and not valid %} is-invalid{% endif %}">
+      {{- form_label(form) -}}
+      <div class="{{ block('form_group_class') }}">
+        {{- form_widget(form) -}}
+        {{- form_errors(form) -}}
+      </div>
+    </div>
+    {##}</fieldset>
+{%- endblock fieldset_form_row %}
+
+{% block submit_row -%}
+  <div class="form-group row">{#--#}
+    <div class="{{ block('form_label_class') }}"></div>{#--#}
+    <div class="{{ block('form_group_class') }}">
+      {{- form_widget(form) -}}
+    </div>{#--#}
+  </div>
+{%- endblock submit_row %}
+
+{% block reset_row -%}
+  <div class="form-group row">{#--#}
+    <div class="{{ block('form_label_class') }}"></div>{#--#}
+    <div class="{{ block('form_group_class') }}">
+      {{- form_widget(form) -}}
+    </div>{#--#}
+  </div>
+{%- endblock reset_row %}
+
+{% block form_group_class -%}
+  col-sm-10
+{%- endblock form_group_class %}
+
+{% block checkbox_row -%}
+  <div class="form-group bb-checkbox-group">
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' form-control')|trim}) -%}
+    <div class="checkbox checkbox-primary">
+      {{- form_widget(form) -}}
+      {{- form_errors(form) -}}
+    </div>
+  </div>
+{%- endblock checkbox_row %}

@@ -1,0 +1,205 @@
+.back-col-menu {
+  width: 100%;
+  @media (min-width: 1200px)  {
+    min-height: calc(100vh - 10px); //(50 + 60)
+    height: 100%;
+  }
+  background: #fff;
+  padding: 20px;
+  @media (max-width: 1660px) {
+    padding: 20px 10px;
+  }
+  max-width: 300px;
+  .member-card {
+    h5 {
+      font-size: 16px;
+      color: #000;
+      font-weight: bold;
+    }
+  }
+  h3, .head-menu {
+    font-size: 22px;
+    color: #000;
+    font-weight: bold;
+    margin:  10px;
+    .tgl-menu {
+      display: none;
+    }
+    .thumb {
+      margin-right: 10px;
+    }
+    .hasThumb, .thumb  {
+      display: inline-block;
+      vertical-align: middle;
+    }
+  }
+  .i-tgl-mobile {
+    display: none;
+    font-size: 28px;
+    position: relative;
+    top:5px;
+    left: 3px;
+  }
+  .in-title {
+    font-family: "Nunito", "Roboto", sans-serif;
+    color: #000;
+    font-size: 20px;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    li {
+      padding: 10px;
+      @media (max-width: 1660px) {
+        padding: 10px 0px;
+      }
+      a {
+        color: $font-grey;
+        font-weight: bold;
+        text-decoration: none;
+        &>i {
+          margin-right: 3px;
+          &:before {
+            color: $font-grey;
+          }
+        }
+      }
+      &.active {
+        a {
+          color: $primary-color;
+          &>i {
+            &:before {
+              color: $primary-color;
+            }
+          }
+        }
+      }
+    }
+  }
+  .submenu-label {
+    cursor: pointer;
+    .tgl-sub-menu {
+      margin-left: auto;
+      display: inline-block;
+      width: 30px;
+    }
+    @media (max-width: 1660px) {
+      font-size: 17px;
+    }
+  }
+  .main-item {
+    color: #000 !important;
+    &.active {
+      color: $primary-color !important;
+    }
+  }
+  .submenu {
+    display: none;
+    &.sopen {
+      display: block;
+      @media (max-width: 1660px) {
+        li {
+          padding-left: 10px;
+          font-size: 15px;
+        }
+      }
+
+    }
+  }
+  .head-menu {
+    display: none;
+  }
+  @media (max-width: 1200px) {
+    max-width: 100%;
+    min-height: 0;
+    margin-bottom: 10px;
+    padding: 15px 0;
+    .i-tgl-mobile {
+      display: inline-block;
+    }
+    .head-menu {
+      display: block;
+      text-align: center;
+      font-size: 18px;
+      margin: 0;
+      .tgl-menu {
+        display: inline-block;
+      }
+      .mobile-btn {
+        display: inline-block;
+        border: 1px solid #000;
+        padding: 0px 20px;
+        border-radius: 30px;
+      }
+    }
+    .content-menu {
+      transition: opacity 0.8s, max-height 0.5s;
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      &.hide {
+        transition: opacity 0s; //hide speed opacity 0
+        opacity: 0;
+        height: 0;
+        max-height: 0;
+      }
+      &.show {
+        padding: 10px;
+        opacity: 1;
+        height: auto;
+        max-height: 10000px;
+        margin: 10px auto;
+      }
+      i {
+        font-size: 20px;
+        margin-right: 10px;
+      }
+    }
+  }
+}
+
+.placeholder-load {
+  border-radius: 30px;
+  height: 25px;
+  margin: auto;
+  width: 250px;
+  max-width: 90%;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  // Animation
+  animation-duration: 1.7s;
+  animation-fill-mode: forwards;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  animation-name: placeholderAnimate;
+  background: linear-gradient(to right, #eee 2%, #ddd 18%, #eee 33%);
+  background-size: 1300px; // Animation Area
+}
+@keyframes placeholderAnimate {
+  0%{ background-position: -650px 0; }
+  100%{ background-position: 650px 0; }
+}
+
+.member-card {
+  margin-bottom: 30px;
+}
+
+.member-thumb {
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  text-align: center;
+  line-height: 50px;
+  background: #a3a3a3;
+  margin: 5px auto 10px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: bold;
+  overflow: hidden;
+  display: block;
+}

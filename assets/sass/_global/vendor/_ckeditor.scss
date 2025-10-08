@@ -1,0 +1,5 @@
+//CKEDITOR IMPORTANT FOR LINK IN modal !!!
+:root {
+  --ck-z-default: 10555 !important;
+  --ck-z-modal: calc(var(--ck-z-default) + 999) !important;
+}

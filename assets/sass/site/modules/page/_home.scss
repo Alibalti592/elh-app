@@ -1,0 +1,20 @@
+.home-phone {
+  max-width: 350px;
+  margin-left: auto;
+  display: block;
+}
+
+.apps-btn {
+  .app-store {
+    width: 180px;
+    display: inline-block;
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+  }
+  .play-store {
+    width: 190px;
+  }
+}

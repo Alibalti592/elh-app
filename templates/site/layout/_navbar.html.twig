@@ -1,0 +1,70 @@
+<header class="site-header site-header--menu-right landing-13-menu site-header--absolute site-header--sticky">
+    <div class="container">
+        <nav class="navbar site-navbar">
+            <!-- Brand Logo-->
+            <div class="brand-logo">
+                <a href="/">
+                    <img src="{{ asset('images/logo-no-bg.svg') }}" alt="" class="logo-nav">
+                </a>
+            </div>
+            <div class="menu-block-wrapper">
+                <div class="menu-overlay"></div>
+                <nav class="menu-block" id="append-menu-header">
+                    <div class="mobile-menu-head">
+                        <div class="go-back">
+                            <i class="fa fa-angle-left"></i>
+                        </div>
+                        <div class="current-menu-title"></div>
+                        <div class="mobile-menu-close">&times;</div>
+                    </div>
+                    <ul class="site-menu-main">
+{#                        <li class="nav-item nav-item-has-children">#}
+{#                            <a href="#" class="nav-link-item drop-trigger">Dropdowns <i class="fas fa-angle-down"></i>#}
+{#                            </a>#}
+{#                            <ul class="sub-menu" id="submenu-9">#}
+{#                                <li class="sub-menu--item">#}
+{#                                    <a href="#">Dropdown 01</a>#}
+{#                                </li>#}
+{#                                <li class="sub-menu--item">#}
+{#                                    <a href="#">Dropdown 02</a>#}
+{#                                </li>#}
+{#                                <li class="sub-menu--item">#}
+{#                                    <a href="#">Dropdown 03</a>#}
+{#                                </li>#}
+{#                                <li class="sub-menu--item">#}
+{#                                    <a href="#">Dropdown 04</a>#}
+{#                                </li>#}
+{#                            </ul>#}
+{#                        </li>#}
+
+{#                        <li class="nav-item">#}
+{#                            <a href="#" class="nav-link-item">Support</a>#}
+{#                        </li>#}
+
+                        {% if app.user %}
+                            <li class="nav-item nav-item-user">
+                                <a href="{{ path('dashboard') }}">
+                                    {{ app.user.firstname|humanize }} {{ app.user.lastname|slice(0,1)|humanize }}.
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="nav-item nav-item-user">
+                                <a href="{{ path('app_login') }}">Se connecter</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            <div class="header-btn header-btn-l-13 ms-auto d-none d-xs-inline-flex">
+                <a target="_blank" class="btn btn download-btn focus-reset" href="#">
+                    Télécharger l'application
+                </a>
+            </div>
+            <!-- mobile menu trigger -->
+            <div class="mobile-menu-trigger">
+                <span></span>
+            </div>
+            <!--/.Mobile Menu Hamburger Ends-->
+        </nav>
+    </div>
+</header>

@@ -1,0 +1,14 @@
+.bb-dropdown {
+  .dropdown-item {
+    display: block;
+    padding: 12px 10px;
+    font-size: 15px;
+    cursor: pointer;
+    i {
+      margin-right: 5px;
+    }
+    &:not(:last-of-type) {
+      border-bottom: 1px solid $border-color;
+    }
+  }
+}

@@ -1,0 +1,122 @@
+//@import "../components/icons/materialdesignicons";
+//@import "../components/icons/themify-icons";
+
+.color-athlete {
+  color: $athleteColor !important;
+}
+.color-coach {
+  color: $coachColor !important;
+}
+.color-club {
+  color: $clubColor !important;
+}
+
+h1 {
+  font-family: $font-main-title;
+}
+h2,h3 {
+  font-family: $font-main-title;
+  color: #000;
+}
+
+.section-title {
+  text-transform: uppercase;
+  font-size: 2.3rem;
+  letter-spacing: 2px;
+  color: #212529;
+  margin-bottom: 45px;
+  text-align: center;
+  color: $primary-color;
+  font-family: $font-dosis;
+  &::after {
+    display: block;
+    content: '';
+    height: 2px;
+    width: 80px;
+    margin: 20px auto;
+    @include background-gradient((to left, $main-gradient));
+    @include border-left-radius(60%);
+  }
+  &.st-l {
+    text-align: left;
+    &::after {
+      margin: 20px 0;
+    }
+  }
+}
+.section-sub-title {
+  color: #868e96;
+  font-size: 1.43rem;
+  //after title
+  margin-top: -30px;
+  margin-bottom: 45px;
+  text-align: center;
+  &.st-l {
+    text-align: left;
+  }
+}
+
+.in-title {
+  font-family: $font-main-title-v2;
+  color: #000;
+  font-size: 20px;
+  margin-bottom: 5px;
+}
+
+a {
+  color: $primary-color;
+  @include transition(all 0.2s ease-out);
+  &:hover, &:focus {
+    color: darken($primary-color, 5%);
+  }
+}
+a.main-link {
+  font-size: 1.4rem;
+  line-height: 1.4;
+  color: $font-dark;
+  font-family: $font-main-title;
+
+  i {
+    @include transition(all 0.2s ease);
+    line-height: 1.4;
+    position: relative;
+    top:2px;
+    left: 5px;
+  }
+  &:hover, &:focus {
+    color: darken($primary-color, 5%);
+    i {
+      transform-origin: 0;
+      @include transform(scale(1.5,1));
+      background-image: linear-gradient(to right, $main-gradient);
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+  }
+}
+a.trash-link {
+  color: $alert-color-error;
+}
+p {
+  font-size: 15px;
+  font-family: $font-main;
+}
+div.info, p.info {
+  @extend .card;
+  padding: 10px;
+  @include border-radius(2px);
+  border-left: 3px solid $primary-color;
+}
+ a:hover, a:focus {
+   text-decoration: none;
+   cursor: pointer;
+ }
+.text-left           { text-align: left; }
+.text-right          { text-align: right; }
+.text-center         { text-align: center; }
+
+.text-colored, .title-box .title-alt {
+  color: $primary-color;
+}

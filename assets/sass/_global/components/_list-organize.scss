@@ -1,0 +1,9 @@
+.list-organize {
+  .handle {
+    padding: 5px  10px;
+    cursor: pointer;
+  }
+  .content, .handle  {
+    display: inline-block;
+  }
+}

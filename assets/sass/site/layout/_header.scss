@@ -1,0 +1,20 @@
+.content-wrapper { //menu bar
+  padding-top: 90px;
+}
+
+.site-header {
+  background: $primary-color;
+  height: 90px;
+}
+
+.brand-logo {
+  img {
+    height: 80px;
+    width: auto;
+  }
+}
+
+.nav-item-user a {
+  color: #fff;
+  font-weight: bold;
+}

@@ -1,0 +1,211 @@
+/* ======== Pricing ======= */
+
+.pricing-column {
+  position: relative;
+  margin-top: 40px;
+}
+
+.pricing-column .inner-box {
+  position: relative;
+  max-width: 400px;
+  width: 400px;
+  margin: 0px auto;
+  padding: 0px 0px 45px;
+  border-radius: 5px;
+  border: 2px solid #ededed;
+  &:hover, &:focus {
+    box-shadow: 0 .2em .5rem rgba(31,45,61,.125);
+  }
+}
+
+.pricing-column .plan-header {
+  position: relative;
+  padding: 30px 20px 25px;
+}
+
+.pricing-column .plan-title {
+  font-size: 13px;
+  margin-bottom: 10px;
+  color: $primary-color;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 400;
+  margin-top: 20px;
+}
+
+.pricing-column {
+  .plan-price {
+    font-size: 24px;
+    margin-bottom: 5px;
+    color: $font-dark;
+    margin-top: 30px;
+    .sep {
+      display: inline-block;
+      color: #aaa;
+      font-size: 16px;
+      padding: 5px 0;
+    }
+    small {
+      font-size: 14px;
+      color: #777;
+    }
+  }
+  p {
+    margin: 0 !important;
+    padding: 20px;
+    height: 110px;
+    color: $font-grey;
+  }
+  .plan-duration {
+    font-size: 13px;
+    color: #98a6ad;
+  }
+  .plan-stats {
+    position: relative;
+    padding: 30px 20px 15px;
+    li {
+      margin-bottom: 15px;
+      line-height: 24px;
+    }
+  }
+}
+
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-price-features {
+  table {
+    margin: auto;
+  }
+  th {
+    padding: 5px 15px;
+    width: 100px;
+  }
+  .plan-head {
+    min-width: 100px;
+  }
+  .plan-img {
+    width: 50px;
+    height: 50px;
+    margin: 10px auto;
+  }
+  .plan-title {
+    height: 40px;
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: $athleteColor;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 400;
+    margin-top: 20px;
+    text-align: center;
+    &.coach {
+      line-height: 40px;
+    }
+  }
+  .coach {
+    color: $coachColor;
+
+  }
+  .club {
+    color: $clubColor;
+  }
+  .plan-desc {
+    font-size: 14px;
+    line-height: 14px;
+    color: #c4cad2;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+  .plan-price {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 5px;
+    color: $font-dark;
+    .sep {
+      display: inline-block;
+      color: #aaa;
+      font-size: 16px;
+      padding: 5px 0;
+    }
+    small {
+      font-size: 14px;
+      color: #777;
+    }
+    .sp-coach {
+      font-size: 12px;
+      color: $font-grey;
+      line-height: 14px;
+    }
+  }
+  .feature-head-col {
+    font-size: 18px;
+    font-family: $font-main-title-v2;
+    color: $font-dark;
+    padding: 15px 0 5px 0;
+    border-radius: 30px;
+    border-bottom: 2px solid $bg-light-v2;
+  }
+  .row-feature {
+    td {
+      padding: 5px;
+      text-align: center;
+      i {
+        font-size: 16px;
+      }
+      i.mdi-check {
+        height: 20px;
+        width: 20px;
+        display: block;
+        border-radius: 50%;
+        line-height: 20px;
+        text-align: center;
+        margin: auto;
+        background: $primary-color;
+        color: #fff;
+      }
+      i.mdi-close {
+        color: #999;
+      }
+    }
+    &:hover, &:focus {
+      background: $bg-light-v2;
+    }
+  }
+  .feature-text {
+    font-size: 14px;
+    color: #444;
+    line-height: 15px;
+    text-align: left !important;
+    padding: 5px 0 !important;
+  }
+  .feature-text-w {
+    width: 300px;
+  }
+  .subscribe {
+    td {
+      padding: 5px 15px;
+    }
+    .bb-btn {
+      padding: 6px 12px;
+      font-size: 16px;
+      line-height: 20px;
+      margin: 15px auto;
+      display: block;
+      text-align: center;
+    }
+  }
+  @media (min-width: 1200px) {
+    .plan-head {
+      min-width: 150px;
+    }
+  }
+  @media (min-width: 1480px) {
+    .plan-head {
+      min-width: 170px;
+    }
+  }
+}

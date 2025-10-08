@@ -1,0 +1,12 @@
+
+<div class="card p-2 fadeInDown animated title-box">
+    <div class="text-right">
+        <h3 class="text-dark m-t-5">
+            {% if diffClass is defined and diff is defined %}
+                <b class="{{ diffClass}}">({% if diff >0 %}+{% endif %}{{ diff }})</b>
+            {% endif %}
+            <b class="counter">{{ titleNumber }}</b>
+        </h3>
+        <p class="text-muted mb-0">{{ titleLabel }}</p>
+    </div>
+</div>

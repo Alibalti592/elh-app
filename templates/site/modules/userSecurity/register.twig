@@ -1,0 +1,56 @@
+{% extends "site/layout/layout.html.twig" %}
+
+{% block title %}
+    S'inscrire sur {{ appName }}
+{% endblock %}
+{% block description %}
+    Inscrivez-vous
+{% endblock %}
+
+{% block body_class %}layout-dark layout-bg-img{% endblock %}
+
+{% block content %}
+    <div id="user-page" class="container">
+        <div class="wrapper-page-login card-box card" id="register-card">
+            <div class="text-center">
+                <h1 class="mb-1">Inscription</h1>
+            </div>
+
+            <form action="{{ path('app_register') }}" method="POST" class="user_registration_register form-horizontal m-t-20 row">
+
+                {{ form_errors(form) }}
+
+                <div class="col-md-12">
+                    {{ form_row(form.email, {'icon' : 'ti-email'}) }}
+                </div>
+
+                {#NOM PRENOM#}
+                <div class="col-md-12">
+                    {{ form_row(form.firstname, {'icon' : 'ti-user'}) }}
+
+                    {{ form_row(form.lastname, {'icon' : 'ti-user'}) }}
+
+                    {{ form_row(form.plainPassword, {'icon' : 'ti-lock'}) }}
+                </div>
+
+
+                <div class="col-12 text-center">
+                    <button class="bb-btn btn-user-registration" type="submit">
+                        Créer mon compte
+                    </button>
+                </div>
+
+                {{ form_rest(form) }}
+
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {% include "site/layout/_footer.html.twig" %}
+{% endblock %}
+
+{% block part_js %}
+
+{% endblock %}

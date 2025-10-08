@@ -1,0 +1,9 @@
+load_page_content:
+  path: /load-page-content
+  controller: App\Controller\Api\PageController::loadPageContent
+  methods: GET
+
+has_seen_dette_infos:
+  path: /hasseedetteinfos
+  controller: App\Controller\Api\PageController::hasSeeUpd
+  methods: POST

@@ -1,0 +1,49 @@
+#faq-categ-contact {
+  background: transparent;
+  padding: 0px;
+  position: relative;
+  margin-top: -40px;
+  h2 {
+    font-family: "Nunito", "Roboto", "Montserrat", Arial, sans-serif;
+    color: #11031f;
+    font-size: 35px;
+    margin-bottom: 30px;
+  }
+}
+
+#page-contact {
+  background: $bg-light-v2;
+  margin: 30px 0 0 0;
+  padding: 90px 0;
+  h2 {
+    font-family: "Nunito", "Roboto", "Montserrat", Arial, sans-serif;
+    color: #11031f;
+  }
+  .bb-nav-tab {
+    margin-bottom: 20px;
+    a {
+      padding: 12px 30px;
+      border-radius: 20px;
+      box-shadow: none;
+      font-size: 18px;
+    }
+  }
+  #fields-contact {
+    max-width: 400px;
+    margin: auto;
+  }
+  .phone-block {
+    display: none;
+  }
+  form, .card-support {
+    padding: 20px;
+    background: #fff;
+    border-radius: 10px;
+  }
+  .card-support {
+    p {
+      font-size: 17px;
+      margin: 20px 0;
+    }
+  }
+}

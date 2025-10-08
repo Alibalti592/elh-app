@@ -1,0 +1,75 @@
+
+#registration-confirm {
+  margin-top: 80px;
+}
+#user-page {
+  padding: 60px 0;
+  z-index: 10;
+  position: relative;
+}
+.wrapper-page-user {
+  margin: 0 auto;
+  max-width: 500px;
+}
+
+.login-form-page {
+  //width: 90%;
+  max-width: 390px;
+}
+
+.wrapper-page-login {
+  margin: 0 auto;
+  padding: 40px 20px;
+  h1 {
+    color: $font-dark;
+    font-size: 28px;
+    margin-bottom: 0px;
+  }
+  h2 {
+    color: $font-grey;
+    font-size: 16px;
+    margin-bottom: 25px;
+  }
+  .group-use-accept {
+    margin-left: 5px;
+  }
+  .group-remember {
+    margin-left: 20px;
+  }
+
+  .logo-ev-sport {
+    img {
+      width: 60%;
+      max-width: 200px;
+      margin: 0 auto 30px;
+    }
+  }
+
+  .input-group {
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin-bottom: 15px;
+  }
+  .input-group-addon {
+    padding: .5rem .75rem;
+    margin-bottom: 0;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.25;
+    color: $font-grey;
+    text-align: center;
+    background-color: #e9ecef;
+    border-radius: .25rem;
+    font-size: 18px;
+    background-color: transparent;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 15;
+  }
+  input {
+    padding-left: 50px;
+    border-left-color: $primary-color;
+  }
+}
