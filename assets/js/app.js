@@ -1,0 +1,36 @@
+import {iniVueOnId} from "@/services/ini";
+import sidebar from "@/components/sidebar.vue";
+import {datatableStore} from "@/stores/datatable-store";
+//ADMIN
+import userList from "@/modules/admin-user-list.vue";
+import faqList from "@/modules/admin-faq-list.vue";
+import todoList from "@/modules/admin-todo-list.vue";
+import carteText from "@/modules/admin-carte-text.vue";
+import mosqueList from "@/modules/admin-mosque-list.vue";
+import pompeList from "@/modules/admin-pompe-list.vue";
+import maraudeList from "@/modules/admin-maraude-list.vue";
+import adminSalatList from "@/modules/admin-salat-list.vue";
+import emailList from "@/modules/admin-email-list.vue";
+import adminDeuil from "@/modules/admin-deuil.vue";
+import adminIntro from "@/modules/admin-intro.vue";
+import adminDon from "@/modules/admin-don.vue";
+import adminImams from "@/modules/admin-imam-list.vue";
+import adminPages from "@/modules/admin-page-list.vue";
+import adminNavAppP from "@/modules/admin-nav-page-list.vue";
+
+iniVueOnId("sidebar", sidebar, null);
+iniVueOnId("admin-user-list", userList, datatableStore);
+iniVueOnId("admin-faq-list", faqList, datatableStore);
+iniVueOnId("admin-mosque-list", mosqueList, datatableStore);
+iniVueOnId("admin-todo-list", todoList, datatableStore);
+iniVueOnId("admin-carte-text", carteText, datatableStore);
+iniVueOnId("admin-pompe-list", pompeList, datatableStore);
+iniVueOnId("admin-maraude-list", maraudeList, datatableStore);
+iniVueOnId("admin-salat-list", adminSalatList, datatableStore);
+iniVueOnId("admin-email-list", emailList, datatableStore);
+iniVueOnId("admin-deuil", adminDeuil, datatableStore);
+iniVueOnId("admin-intro", adminIntro, datatableStore);
+iniVueOnId("admin-don", adminDon, datatableStore);
+iniVueOnId("admin-imam-list", adminImams, datatableStore);
+iniVueOnId("admin-page-list", adminPages, datatableStore);
+iniVueOnId("admin-navpage-list", adminNavAppP, datatableStore);

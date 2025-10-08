@@ -1,0 +1,43 @@
+.v-bb-datatable-pagination {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0;
+  height: 30px;
+
+  .pagination-item {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    margin-right: 5px;
+    font-size: 16px;
+    transition: color 0.15s ease-in-out;
+    text-align: center;
+    @include border-radius(50%);
+    &.selected {
+      background: $primary-color;
+      color: #fff;
+    }
+
+    .page-btn {
+      background-color: transparent;
+      outline: none;
+      border: none;
+      color: $font-dark;
+      transition: color 0.15s ease-in-out;
+    }
+
+    .page-btn:hover {
+      color: $primary-color;
+    }
+
+    .page-btn:disabled{
+      cursor: not-allowed;
+      box-shadow: none;
+      opacity: .65;
+    }
+  }
+
+}

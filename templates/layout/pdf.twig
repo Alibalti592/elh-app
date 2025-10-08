@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+{% set htmlLocale = app.request.locale %}
+<!--[if lte IE 9]> <html class="no-js lt-ie9" lang="{{ htmlLocale }}"> <![endif]-->
+<!--[if gt IE 9]><!--> <html lang="{{ htmlLocale }}"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>
+    Testament {{ appName }}
+  </title>
+
+  {% block metaDescription %}
+    <meta name="description" content="{% block description %}{% endblock %}" />
+  {% endblock %}
+
+  {# Webfonts #}
+  <link href='https://fonts.googleapis.com/css?family=Montserrat|Roboto:400,300,700;Open+Sans:400,600,700' rel='stylesheet' type='text/css'>
+
+  {# CSS #}
+  {% block part_css %}{% endblock %}
+  <style>
+      /*page brack pbs*/
+      * {
+          overflow: visible !important;
+      }
+      /* FIX FLEX WKHTML */
+      .row {
+          display: -webkit-box; /* wkhtmltopdf uses this one */
+          display: flex;
+          -webkit-box-pack: center; /* wkhtmltopdf uses this one */
+          justify-content: center;
+      }
+
+      .row > div {
+          -webkit-box-flex: 1;
+          -webkit-flex: 1;
+          flex: 1;
+      }
+
+      .row > div:last-child {
+          margin-right: 0;
+      }
+      p, ul, li {
+          font-size: 15px;
+      }
+      label {
+          font-size: 12px;
+          color: #999;
+      }
+      .dette {
+          background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px;
+      }
+      .dette .title {
+      }
+      .dette .info {
+
+      }
+   </style>
+</head>
+
+
+<body class="export-pdf fixed-left widescreen coaching {% block body_class %}{% endblock %}" style="background: #fdf3e9; padding: 20px">
+<div id="wrapper" class="enlarged forced">
+  <div class="content-page">
+    <div class="content">
+      <p style="background: #fff; padding: 15px; border-radius: 15px; color: #777; font-size: 14px; font-style: italic">Le Très Haut a dit: On vous a prescrit, quand la mort est proche de l'un de vous et s'il laisse des biens, de faire un testament en règle en faveur de ses père et mère et de ses plus proches. C'est un devoir pour les pieux.(Coran, :80)</p>
+
+
+
+      <div style="background: #fff; padding: 15px; border-radius: 15px">
+        <h1>Testament de {{ testament.createdBy.fullname }}  <div style="font-weight: bold; color: #777; margin-bottom: 15px; font-size: 14px">Généré le {{ dateString }}</div></h1>
+
+
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Je souhaite être enterré(e) selon les rites musulmans dans le pays et  ou ville suivante :
+          </div>
+          <div class="rep">
+            {{ testament.location }}
+          </div>
+        </div>
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Je souhaite que ma toilette mortuaire soit faite par :
+          </div>
+          <div class="rep">
+            {{ testament.toilette }}
+          </div>
+        </div>
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Je souhaite que mon enterrement se tienne sans aucune innovation et dans les conditions suivantes :
+          </div>
+          <div class="rep">
+            {{ testament.family }}
+          </div>
+        </div>
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Je souhaite que l’on rembourse mes dettes de la manière suivante :
+          </div>
+          <div class="rep">
+            {{ testament.fixe }}
+          </div>
+        </div>
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Je souhaite que l’argent prêté et qui vous sera rendu soit utilisé de la manière suivante :
+          </div>
+          <div class="rep">
+            {{ testament.goods }}
+          </div>
+        </div>
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Je souhaite laisser les recommandations suivantes
+          </div>
+          <div class="rep">
+            {{ testament.lastwill }}
+          </div>
+        </div>
+        <div class="block-rep" style="margin-bottom: 30px">
+          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
+            Jours de jeûn à rattraper
+          </div>
+          <div class="rep">
+            {{ jeunText }}
+          </div>
+        </div>
+        <div  style="display: block; width: 200px; margin: auto">
+          <img src="{{ logoElhSrc }}" style="display: block; width: 200px; margin: 20px auto">
+        </div>
+      </div>
+      <div style="margin-bottom: 20px">
+        <h2>Dettes en cours</h2>
+        {% for jed in jeds %}
+          <div class="dette">
+            <div class="title">Preteur : <strong>{{ jed.cardOtherName }} </strong>| Tel : </span>{{ jed.cardOtherTel }}</div>
+            <div class="title">Emprunteur : {{ jed.createdByName }}</div>
+            <div class="info"><span>Montant : </span>{{ jed.amount }}€</div>
+            <div class="info"><span>Date : </span>{{ jed.dateDisplay }}</div>
+          </div>
+        {% endfor %}
+      </div>
+      <div style="margin-bottom: 20px">
+        <h2>Prêts en cours</h2>
+        {% for onm in onms %}
+          <div class="dette">
+            <div class="title">Emprunteur : <strong>{{ onm.cardOtherName }} </strong>| Tel : </span>{{ onm.cardOtherTel }}</div>
+            <div class="title">Preteur : {{ onm.createdByName }}</div>
+            <div class="info"><span>Montant : </span>{{ onm.amount }}€</div>
+            <div class="info"><span>Date : </span>{{ onm.dateDisplay }}</div>
+          </div>
+        {% endfor %}
+      </div>
+
+
+      <div style="margin-bottom: 20px">
+        <h2>Amanas en cours</h2>
+        {% for amana in amanas %}
+          <div class="dette">
+            <div class="title">Entre : <strong>{{ amana.cardOtherName }} </strong>| Tel : </span>{{ amana.cardOtherTel }}</div>
+            <div class="title">et : {{ amana.createdByName }}</div>
+            <div class="info"><span>Date : </span>{{ amana.dateDisplay }}</div>
+          </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>
+
+

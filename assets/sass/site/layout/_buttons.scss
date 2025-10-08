@@ -1,0 +1,35 @@
+.bb-btn {
+  cursor: pointer;
+  margin: 5px auto;
+  padding: 3px 15px;
+  background: $primary-color;
+  //background: red;
+  color: #fff;
+  display: inline-block;
+  overflow: hidden;
+  border: 2px solid $primary-color;
+  font-weight: 400;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+
+.bb-btn-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-block;
+  line-height: 30px;
+  vertical-align: center;
+  text-align: center;
+  background: transparent;
+  border: 1px solid $font-grey;
+  border-radius: 50%;
+  color: $font-grey;
+  &:hover, &:focus {
+    color: #fff;
+    border-color: $primary-color;
+    background: $primary-color;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+  }
+
+}

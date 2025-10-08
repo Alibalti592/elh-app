@@ -1,0 +1,25 @@
+<footer class="footer-l-13 text-center text-md-start">
+    <div class="container">
+        <div class="row footer-l-13-items align-items-center">
+            <div class="col-md-3">
+                <div class="footer-logo-l-13">
+                    <a href="/"><img src="/images/logo-simple.png" alt="logo" class="footer-logo"></a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="footer-widget-l-13">
+                    <ul class="pl-0 list-unstyled d-flex flex-wrap justify-content-center align-items-end ">
+                        <li class="d-flex"><a href="{{ path('page_contact') }}">Nous contacter</a></li>
+                        <li class="d-flex"><a href="{{ path('mentions_legales') }}">Mentions legales</a></li>
+                        <li class="d-flex"><a href="{{ path('cgu') }}">CGU</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="copyright-area-l-13 text-center text-md-right">
+                    <p>Copyright © {{ appName }} {{ "now"|date("Y") }} </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>

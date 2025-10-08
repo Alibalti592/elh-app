@@ -1,0 +1,42 @@
+{% extends "site/layout/layout.html.twig" %}
+
+{% block title %}
+  {{ title }}
+{% endblock %}
+
+{% block noindex %}
+  {% if noindex is defined and noindex %}
+    <meta name="robots" content="noindex">
+  {% endif %}
+{% endblock %}
+
+{% block description %}
+{% endblock %}
+
+
+{% block body_class %}{% endblock %}
+
+ {% block content_header %}
+   <div class="simple-banner">
+     <h1 class="text-center">{{ title }}</h1>
+   </div>
+ {% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div id="default-page">
+      {{ content|raw }}
+    </div>
+  </div>
+{% endblock %}
+
+{% block footer %}
+  {% include "site/layout/_footer.html.twig" %}
+{% endblock %}
+
+{% block all_js %}
+
+{% endblock %}
+
+{% block part_js %}
+{% endblock %}

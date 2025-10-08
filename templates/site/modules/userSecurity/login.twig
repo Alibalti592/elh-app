@@ -1,0 +1,70 @@
+{% extends "site/layout/layout.html.twig" %}
+
+{% block title %}
+    Se connecter
+{% endblock %}
+
+{% block description %}
+    Connection
+{% endblock %}
+
+
+{% block body_class %}layout-dark layout-bg-img{% endblock %}
+
+{% block content %}
+    <div id="user-page" class="container">
+        <div class="wrapper-page-login card-box login-form-page">
+            <div class="text-center mb-5">
+                <h1>Connexion</h1>
+            </div>
+            <form action="{{ path('app_login') }}" method="post" class="form-horizontal row mb-5 ">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                {% if error %}
+                    <div class="alert alert-warning">
+                        {{ error.messageKey|trans(error.messageData, 'security') }}
+                    </div>
+                {% endif %}
+
+                <div class="form-group col-12">
+                    <div class="input-group text-center">
+                        <span class="input-group-addon">
+                            <i class="icon-mail"></i>
+                        </span>
+                        <input type="text" id="email" name="email" value="{{ last_username }}" required="required"
+                               class="form-control"  placeholder="Email" autofocus/>
+                    </div>
+                </div>
+
+                <div class="form-group col-12">
+                    <div class="input-group">
+                        <span class="input-group-addon"><i class="icon-lock"></i></span>
+                        <input type="password" id="password" name="password" required="required" class="form-control" placeholder="Mot de passe"/>
+                    </div>
+                </div>
+
+                <div class="form-group col-12 text-center">
+                    <button class="bb-btn" type="submit">
+                        Me connecter
+                    </button>
+                </div>
+
+{#                <div class="col-sm-6">#}
+{#                    <a href="{{ path('app_forgotten_password') }}" class="text-muted"><i class="fa fa-lock m-r-5"></i>#}
+{#                        {{ 'user.forgot_password' | trans }}</a>#}
+{#                </div>#}
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+    {% include "site/layout/_footer.html.twig" %}
+{% endblock %}
+
+{% block all_js %}
+
+{% endblock %}
+
+{% block part_js %}
+{% endblock %}

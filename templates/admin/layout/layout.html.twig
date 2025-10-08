@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+{% set htmlLocale = app.request.locale %}
+<!--[if lte IE 9]> <html class="no-js lt-ie9" lang="{{ htmlLocale }}"> <![endif]-->
+<!--[if gt IE 9]><!--> <html lang="{{ htmlLocale }}"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="/images/favicon.png?v1">
+
+    {% block noindex %}{% endblock %}
+
+    <title>
+        {% block header_title %}
+            ADMIN
+        {% endblock %}
+    </title>
+
+    {% block metaDescription %}
+        <meta name="description" content="{% block description %}{% endblock %}" />
+    {% endblock %}
+    {% block ogtype %} {% endblock %}
+
+    {# Webfonts #}
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Poppins&family=Nunito:wght@700&family=Roboto:wght@300;400;700&display=swap" as="style">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins&family=Nunito:wght@700&family=Roboto:wght@300;400;700&display=swap">
+    {# CSS #}
+    {% block css_before %}
+
+    {% endblock %}
+    {{ encore_entry_link_tags('css/admin') }}
+
+    {% block part_css %}{% endblock %}
+</head>
+
+{% block overridePage %}
+    <body class="{% block body_extra_class %}{% endblock %}">
+    <div id="wrapper" class="admin-layout">
+      {# Header #}
+      {#        {% block topBar %}#}
+      {#            {% include 'admin/layout/_topBar.html.twig' %}#}
+      {#        {% endblock %}#}
+      <div class="row">
+        <div class="col-xl-2 col-lg-12">
+          {% block sidebar %}
+            {% include 'admin/layout/_sideBar.html.twig' %}
+          {% endblock %}
+        </div>
+        <div class="col-md-10 py-3 px-3">
+          {# Content #}
+          {% block contentOverride %}
+            <div class="content-page">
+              <!-- Start content -->
+              <div class="content">
+                {#messages flash#}
+                {% include 'admin/layout/_messages.html.twig' %}
+
+                <div class="container-fluid">
+
+                </div>
+                <!-- end container -->
+                {% block content %}
+
+                {% endblock %}
+              </div>
+              <!-- end content -->
+
+            </div>
+          {% endblock %}
+        </div>
+      </div>
+
+        {# Footer #}
+        {% block footer %}
+{#            {% include 'admin/layout/_footer.html.twig' %}#}
+        {% endblock %}
+
+
+        {# JS Footer #}
+        {% block all_js %}
+{#            <script src="{{ asset('/js/vendor/moment/moment.js') }}"></script>#}
+          <script src="/js/admin.min.js"></script>
+          {{ encore_entry_script_tags('main-app') }}
+        {% endblock %}
+
+        {#when js is used once in template#}
+        {% block part_js %}{% endblock %}
+
+    </div>
+    </body>
+{% endblock overridePage %}
+</html>

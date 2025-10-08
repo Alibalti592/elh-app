@@ -1,0 +1,5 @@
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Entity\RefreshToken
+    ttl: 15780000 #6 mois
+    ttl_update: true #permime pas si au moins une connexion tousles 6 mois !!
+    firewall: elh-api

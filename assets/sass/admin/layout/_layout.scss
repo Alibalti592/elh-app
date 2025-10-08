@@ -1,0 +1,51 @@
+body {
+  margin: 0;
+  color: #4c5667;
+  overflow-x: hidden !important;
+  font-family: "Roboto", sans-serif;
+  font-size: 0.95rem;
+}
+
+.d-flex {
+  display: flex !important;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.admin-layout {
+  background: #f1f1f1;
+}
+.pointer {
+  cursor: pointer;
+}
+.card {
+  padding: 20px;
+  border-radius: 10px;
+  background: #fff;
+  width: 100%;
+  margin-top: 20px;
+}
+.content-page {
+
+}
+.color-error {
+  color: $alert-color-error;
+}
+.color-success {
+  color: $success;
+}
+
+
+[data-tippy-root] {
+  background: #444;
+  padding: 5px 10px;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 14px;
+}

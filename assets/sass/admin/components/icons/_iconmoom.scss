@@ -1,0 +1,82 @@
+@font-face {
+  font-family: 'icomoon';
+  src:  url('~@fontPath/icomoon.eot?mjwzne');
+  src:  url('~@fontPath/icomoon.eot?mjwzne#iefix') format('embedded-opentype'),
+  url('~@fontPath/icomoon.ttf?mjwzne') format('truetype'),
+  url('~@fontPath/icomoon.woff?mjwzne') format('woff'),
+  url('~@fontPath/icomoon.svg?mjwzne#icomoon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icomoon' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-swim:before {
+  content: "\e902";
+}
+.icon-run:before, .icon-trail:before {
+  content: "\e900";
+}
+.icon-bike:before {
+  content: "\e901";
+}
+
+.icon-trohpy:before {
+  content: "\e903";
+}
+
+.icon-race:before {
+  content: "\e904";
+}
+
+.icon-multisport:before {
+  content: "\e90a";
+}
+
+.icon-autre:before {
+  content: "\e908";
+}
+.icon-ppg:before {
+  content: "\e909";
+}
+.icon-winter:before {
+  content: "\e907";
+}
+.icon-chrono:before {
+  content: "\e906";
+}
+
+.icon-linegraph:before {
+  content: "\e039";
+}
+.icon-chat:before {
+  content: "\e049";
+}
+.icon-target:before {
+  content: "\e04e";
+}
+.icon-speedometer:before {
+  content: "\e051";
+}
+.icon-global:before {
+  content: "\e052";
+}
+.icon-clock:before {
+  content: "\e055";
+}
+.icon-scope:before {
+  content: "\e058";
+}

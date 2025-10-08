@@ -1,0 +1,42 @@
+<div class="topbar">
+
+  <!-- LOGO -->
+  <div class="topbar-left">
+    <div class="text-center">
+      <a href="/dashboard" class="logo">
+        <img src="" style="max-width: 30px">
+      </a>
+    </div>
+  </div>
+
+
+  <!-- Button mobile view to collapse sidebar menu -->
+  <nav class="navbar-custom">
+
+    <ul class="list-inline float-right mb-0">
+
+      {#USER#}
+      <li class="list-inline-item dropdown notification-list">
+        <a class="nav-link dropdown-toggle waves-effect waves-light nav-user" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+          {{ app.user.firstname }} <i class="fa fa-caret-down"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right profile-dropdown " aria-labelledby="Preview">
+          <a href="{{ path('app_logout') }}" class="dropdown-item notify-item">
+            <i class="mdi mdi-logout"></i> <span>Logout</span>
+          </a>
+
+        </div>
+      </li>
+    </ul>
+
+    <ul class="list-inline menu-left mb-0">
+      <li class="float-left">
+        <button class="button-menu-mobile open-left waves-light waves-effect">
+          <i class="mdi mdi-menu"></i>
+        </button>
+      </li>
+    </ul>
+
+  </nav>
+
+</div>

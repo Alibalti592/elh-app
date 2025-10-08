@@ -1,0 +1,21 @@
+controllers:
+  resource:
+    path: ../src/Controller/
+    namespace: App\Controller
+  type: attribute
+
+admin:
+  resource: ../src/Controller/Admin/
+  type: attribute
+  prefix: /elhadm
+
+api:
+  resource: ../src/Controller/Api/
+  type: attribute
+  prefix: /elh-api
+
+api_login_check:
+  path: /elh-api/login_check
+
+gesdinet_jwt_refresh_token:
+  path: /elh-api/token/refresh

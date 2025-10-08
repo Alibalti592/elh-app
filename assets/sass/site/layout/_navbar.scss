@@ -1,0 +1,292 @@
+.sticky-wrapper.is-sticky .navbar-custom {
+  width: 100% !important;
+  padding: 5px 0 !important;
+  background: #fff;
+  &:after {
+    content: '';
+    display: block;
+    height: 1px;
+    width: 100%;
+    position: absolute;
+    bottom: 0px;
+    //@include background-gradient($main-gradient);
+    background: linear-gradient($main-gradient);
+    transition: width 0.5s ease-in;
+  }
+  .dropdown-menu {
+    animation: dropdownOpen 0.15s ease-out;
+    a {
+      color: #000;
+      text-shadow: none;
+      font-weight: 700;
+    }
+  }
+  .dropdown-fonctionnalite {
+    i {
+     display: inline-block;
+      margin-right: 10px;
+      font-size: 20px;
+      color: #000;
+      width: 20px;
+      text-align: center;
+    }
+    strong {
+      text-transform: uppercase;
+      color: #000;
+    }
+  }
+}
+body.coach-page {
+  .sticky-wrapper.is-sticky .navbar-custom {
+    &:after {
+      background: $coachColor;
+    }
+  }
+}
+body.athlete-page {
+  .sticky-wrapper.is-sticky .navbar-custom {
+    &:after {
+      background: $athleteColor;
+    }
+  }
+}
+body.club-page {
+  .sticky-wrapper.is-sticky .navbar-custom {
+    &:after {
+      background: $clubColor;
+    }
+  }
+}
+.navbar-brand {
+  &.logo {
+    height: 62px;
+    color: $main-color-dark;
+    line-height: 45px;
+    img {
+      width: 40px;
+      display: inline-block;
+    }
+    span {
+      display: inline-block;
+      margin-left: 5px;
+      font-family: Nunito, Roboto, sans-serif;
+      font-weight: 700;
+      font-size: 28px;
+      color: #000;
+      position: relative;
+      top: 5px;
+    }
+    span small {
+      color: #999;
+      font-size: 14px;
+      letter-spacing: 0.6px;
+    }
+  }
+  @include media-breakpoint-down(md) {
+    &.logo {
+      margin-left: 15px;
+    }
+  }
+}
+
+.btn-lead-action {
+  background: $primary-color;
+  padding: 10px 30px !important;
+  border-radius: 30px;
+  color: #fff !important;
+  margin-left: 5px !important;
+  display: block;
+  //box-shadow: 0px 8px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: rgba($primary-color, 0.2) 0px 8px 24px;
+}
+
+#menu-site {
+  .nav-item {
+    display: inline-block;
+  }
+  .nav-link {
+    font-weight: 700;
+  }
+
+  .nav-link.coach {
+    &:hover, &:focus, &.active  {
+      color: $coachColor;
+    }
+  }
+  .nav-link.athlete {
+    &:hover, &:focus, &.active  {
+      color: $athleteColor;
+    }
+  }
+  .nav-link.club {
+    &:hover, &:focus, &.active  {
+      color: $clubColor;
+    }
+  }
+  .nav-item-user a {
+    text-transform: none;
+  }
+}
+
+#navbarCollapse {
+  justify-content: space-between;
+  overflow-y: auto;
+  max-height: calc(100vh -  70px);
+  .menu-right {
+    margin-left: auto;
+    align-items: center;
+    @include media-breakpoint-down(md) {
+      margin: 20px auto;
+    }
+  }
+}
+
+body.navbar-transparent {
+   .sticky-wrapper.is-sticky .navbar-custom {
+    background: transparent;
+     transition: all 0.5s ease-in;
+   }
+   .navbar-brand {
+     img {
+       filter: invert(1);
+     }
+     span {
+       color: #fff
+     }
+   }
+   .navbar-custom {
+     box-shadow: none;
+   }
+   .navbar-custom .navbar-nav li a {
+     color: #fff;
+     text-shadow: 1px 2px  3px rgba(#000, 0.5);
+     font-weight: 700;
+   }
+
+   .sticky-wrapper.is-sticky .navbar-custom:after {
+     width: 0;
+
+   }
+   .navbar-toggler {
+     color: #fff;
+   }
+}
+
+.bb-nav-reduce {
+  .navbar-brand {
+    padding: 3px 0;
+    &.logo {
+      img {
+        width: 40px;
+      }
+      span {
+        font-size: 25px;
+      }
+      small  {
+        opacity: 0;
+      }
+    }
+  }
+}
+
+.menu-large .megamenu {
+  top: calc(100% - 2px) !important;
+  box-shadow: none;
+  background: transparent;
+  border: none;
+  padding: 0 5px 10px 0 !important;
+  .megamenu-content {
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+    padding: 20px;
+    width: 100%;
+    border-radius: 10px;
+    background: #fff;
+  }
+  .container {
+    padding: 0;
+  }
+  .main-link .nav-link {
+    text-transform: none !important;
+    font-size: 22px;
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding-left: 0;
+    border-bottom: 1px solid $bg-light;
+    padding-bottom: 20px;
+    &.athlete {
+      color: $athleteColor;
+    }
+    &.coach {
+      color: $coachColor;
+    }
+    &.club {
+      color: $clubColor;
+    }
+  }
+  .submenu {
+    margin-top: 15px;
+    .s-title {
+      padding: 3px 0;
+      color: #000;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .s-item {
+      padding: 8px 0;
+      a {
+        font-family: $font-main;
+        padding: 0;
+        color: $font-grey;
+        font-weight: 400 !important;
+        font-size: 14px;
+        &:hover, &:focus {
+          color: $primary-color;
+        }
+      }
+      span {
+        padding: 3px 0;
+        color: #000;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      img {
+        max-height: 180px;
+        margin: 10px auto 0 0;
+        display: block;
+        border-radius: 12px;
+      }
+      i {
+        line-height: 14px;
+        font-size: 22px;
+        margin: 0 5px 0 0;
+        position: relative;
+        top: 5px;
+        color: #444;
+      }
+    }
+    .spe {
+      padding-top: 0;
+    }
+  }
+  @include media-breakpoint-down(md) {
+    .menu-large .megamenu {
+      max-width: 100%;
+    }
+  }
+
+}
+
+.megamenu-items {
+  width: 100%;
+  display: flex;
+  justify-content: space-evenly;
+  @include media-breakpoint-down(md) {
+    display: block;
+  }
+  .mi-item {
+    a {
+      color: #000;
+    }
+  }
+}

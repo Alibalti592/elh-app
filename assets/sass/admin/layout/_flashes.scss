@@ -1,0 +1,44 @@
+.alert {
+  padding: 10px 15px;
+  margin: 15px;
+}
+
+.close {
+  color: inherit;
+  font-size: 21px;
+  font-weight: 700;
+  text-shadow: 0 1px 0 #fff;
+  filter: alpha(opacity=20);
+  opacity: .2;
+  -webkit-appearance: none;
+  padding: 0;
+  cursor: pointer;
+  background: 0 0;
+  border: 0;
+  margin: 4px 5px 3px 10px;
+}
+
+.flashes {
+  position: fixed;
+  right: 0px;
+  top: 80px;
+  z-index: 999;
+  max-width: 85%;
+}
+
+.alert-success {
+  color: #fff;
+  background-color: rgba(#29D97A, 1);
+}
+.alert-error {
+  color: #fff;
+  background-color: #FF5940;
+}
+.alert-warning {
+  color: #fff;
+  background-color: #FFAC1C;
+}
+.alert-info {
+  background-color: #82BEFF;
+  //
+}
