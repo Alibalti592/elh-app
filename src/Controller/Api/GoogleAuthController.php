@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Controller\Api; // correct namespace
+namespace App\Controller\Api;
+
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Google_Client;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Google_Client;
 
 class GoogleAuthController extends AbstractController
 {
@@ -18,46 +19,71 @@ class GoogleAuthController extends AbstractController
         EntityManagerInterface $em,
         JWTTokenManagerInterface $jwtManager
     ): JsonResponse {
-        $data = json_decode($request->getContent(), true);
+        // 1) Lire le JSON
+        $data = json_decode($request->getContent(), true) ?? [];
         $idToken = $data['idToken'] ?? null;
-
         if (!$idToken) {
             return $this->json(['error' => 'Missing Google ID token'], 400);
         }
 
-        // Verify with Google
-        $client = new Google_Client(['client_id' => $_ENV['GOOGLE_CLIENT_ID']]);
+        // 2) Vérifier le token Google
+        //    Pas besoin de secret pour verifyIdToken.
+        $client = new Google_Client();
         $payload = $client->verifyIdToken($idToken);
-
         if (!$payload) {
             return $this->json(['error' => 'Invalid Google token'], 401);
         }
 
-        $email = $payload['email'];
-        $name = $payload['name'];
+        // 3) Vérifier l’audience (aud)
+        //    Si ton app Flutter passe serverClientId = WEB_CLIENT_ID,
+        //    alors le aud doit être le client Web.
+        $aud = $payload['aud'] ?? null;
+        $allowedAudiences = array_values(array_filter([
+            $_ENV['GOOGLE_WEB_CLIENT_ID'] ?? null,     // ex: ...apps.googleusercontent.com
+            $_ENV['GOOGLE_ANDROID_CLIENT_ID'] ?? null, // optionnel si tu veux autoriser l’audience Android
+            $_ENV['GOOGLE_IOS_CLIENT_ID'] ?? null,     // optionnel si tu veux autoriser l’audience iOS
+        ]));
+        if (!in_array($aud, $allowedAudiences, true)) {
+            return $this->json(['error' => 'Token audience mismatch'], 401);
+        }
 
-        // Look up or create user
-        $user = $em->getRepository(User::class)->findOneBy(['email' => $email]);
+        // 4) Vérifier l’email et sa vérification
+        if (empty($payload['email']) || empty($payload['email_verified'])) {
+            return $this->json(['error' => 'Unverified Google account'], 401);
+        }
+
+        $email = $payload['email'];
+        $name  = $payload['name'] ?? explode('@', $email)[0];
+
+        // 5) Trouver ou créer l’utilisateur
+        $repo = $em->getRepository(User::class);
+        $user = $repo->findOneBy(['email' => $email]);
 
         if (!$user) {
             $user = new User();
             $user->setEmail($email);
             $user->setName($name);
-            // you can also set ROLE_USER
             $user->setRoles(['ROLE_USER']);
             $em->persist($user);
-            $em->flush();
+        } else {
+            // Optionnel: mettre à jour le nom si vide
+            if (!$user->getName() && $name) {
+                $user->setName($name);
+            }
         }
 
-        // Create JWT for this user
+        // 6) Sauvegarde
+        $em->flush();
+
+        // 7) Générer le JWT applicatif
         $token = $jwtManager->create($user);
 
         return $this->json([
             'token' => $token,
-            'user' => [
+            'user'  => [
                 'email' => $user->getEmail(),
-                'name' => $user->getName(),
-            ]
+                'name'  => $user->getName(),
+            ],
         ]);
     }
 }
