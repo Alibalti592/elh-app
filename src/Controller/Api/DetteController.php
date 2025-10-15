@@ -112,7 +112,7 @@ public function saveObligation(
         try {
             // Initialize Firebase Storage
             $storage = (new Factory())
-                ->withServiceAccount(\dirname(_DIR_, 3) . '/config/firebase_credentials.json')
+                ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
                 ->withDefaultStorageBucket('mc-connect-5bd22') // bucket name only
                 ->createStorage();
 
