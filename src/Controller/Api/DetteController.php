@@ -150,7 +150,8 @@ public function saveObligation(
     $obligation->setCreatedBy($currentUser);
     $obligation->setCreatedAt(new \DateTimeImmutable());
     $obligation->setTel($data['tel'] ?? null);
-
+$obligation->setFirstname($data['firstname'] ?? null);
+$obligation->setLastname($data['lastname'] ?? null);
     $obligation->setRaison($data['note'] ?? ($data['raison'] ?? null));
 
     $obligation->setStatus($data['status'] ?? 'ini');
