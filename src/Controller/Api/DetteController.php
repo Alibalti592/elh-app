@@ -22,6 +22,10 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Repository\UserRepository;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Exception\FirebaseException;
+
 
 class DetteController extends AbstractController
 {
@@ -82,40 +86,83 @@ public function loadDettes(Request $request): Response
 
 
 #[Route('/save-dette', methods: ['POST'])]
-public function saveObligation(Request $request, ValidatorInterface $validator, UserRepository $userRepository): JsonResponse
-{
+public function saveObligation(
+    Request $request,
+    ValidatorInterface $validator,
+    UserRepository $userRepository
+): JsonResponse {
     $currentUser = $this->getUser();
     if (!$currentUser) {
         return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
     }
 
-    $data = json_decode($request->get('obligation'), true);
-    if (!$data) {
+    $obligationJson = $request->request->get('obligation');
+    if (empty($obligationJson)) {
+        return new JsonResponse(['error' => 'Payload manquant: obligation'], 400);
+    }
+
+    $data = json_decode($obligationJson, true);
+    if (!is_array($data)) {
         return new JsonResponse(['error' => 'Payload invalide'], 400);
     }
 
+    /** @var UploadedFile|null $uploadedFile */
+    $uploadedFile = $request->files->get('file');
+    if ($uploadedFile instanceof UploadedFile) {
+        try {
+            // Initialize Firebase Storage
+            $storage = (new Factory())
+                ->withServiceAccount(\dirname(_DIR_, 3) . '/config/firebase_credentials.json')
+                ->withDefaultStorageBucket('mc-connect-5bd22') // bucket name only
+                ->createStorage();
+
+            $bucket = $storage->getBucket();
+
+            // Build a unique path (optional "obligations/" folder)
+            $ext = $uploadedFile->guessExtension() ?: 'bin';
+            $fileName = sprintf('obligations/%s.%s', uniqid('obh_', true), $ext);
+
+            // Upload the binary
+            $bucket->upload(
+                fopen($uploadedFile->getPathname(), 'r'),
+                [
+                    'name' => $fileName,
+                    // If your bucket is NOT public by default, uncomment next line:
+                    // 'predefinedAcl' => 'publicRead',
+                ]
+            );
+
+            // Public URL (works if the object is publicly readable)
+            $data['fileUrl'] = sprintf('https://storage.googleapis.com/%s/%s', $bucket->name(), $fileName);
+        } catch (FirebaseException $e) {
+            return new JsonResponse(['error' => 'Firebase error: ' . $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            return new JsonResponse(['error' => 'General error: ' . $e->getMessage()], 500);
+        }
+    }
+
     $obligation = new Obligation();
-    $amount = isset($data['amount']) ? (string)$data['amount'] : '0';
-$obligation->setFirstname($data['firstname'] ?? null);
-$obligation->setLastname($data['lastname'] ?? null);
+    $amount = isset($data['amount']) ? (string) $data['amount'] : '0';
 
     $obligation->setType($data['type'] ?? 'jed');
     $obligation->setAmount($amount);
-    $obligation->setRemainingAmount((float)$amount);
+    $obligation->setRemainingAmount((float) $amount);
     $obligation->setCreatedBy($currentUser);
     $obligation->setCreatedAt(new \DateTimeImmutable());
     $obligation->setTel($data['tel'] ?? null);
-    $obligation->setRaison($data['raison'] ?? null);
+
+    $obligation->setRaison($data['note'] ?? ($data['raison'] ?? null));
+
     $obligation->setStatus($data['status'] ?? 'ini');
     $obligation->setDateStart(!empty($data['dateStart']) ? new \DateTime($data['dateStart']) : null);
     $obligation->setDate(!empty($data['date']) ? new \DateTime($data['date']) : null);
-
     $obligation->setFileUrl($data['fileUrl'] ?? null);
-
 
     if (!empty($data['relatedUserId'])) {
         $relatedUser = $userRepository->find($data['relatedUserId']);
-        $obligation->setRelatedTo($relatedUser);
+        if ($relatedUser) {
+            $obligation->setRelatedTo($relatedUser);
+        }
     }
 
     $errors = $validator->validate($obligation);
@@ -132,10 +179,10 @@ $obligation->setLastname($data['lastname'] ?? null);
 
     return new JsonResponse([
         'message' => 'Dette enregistrée avec succès',
-        'obligationId' => $obligation->getId()
-    ]);
+        'obligationId' => $obligation->getId(),
+        'fileUrl' => $obligation->getFileUrl(), // convenient echo
+    ], 200);
 }
-
 
 
 
