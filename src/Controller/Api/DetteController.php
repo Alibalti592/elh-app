@@ -96,6 +96,8 @@ public function saveObligation(Request $request, ValidatorInterface $validator, 
 
     $obligation = new Obligation();
     $amount = isset($data['amount']) ? (string)$data['amount'] : '0';
+$obligation->setFirstname($data['firstname'] ?? null);
+$obligation->setLastname($data['lastname'] ?? null);
 
     $obligation->setType($data['type'] ?? 'jed');
     $obligation->setAmount($amount);
