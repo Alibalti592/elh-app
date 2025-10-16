@@ -82,13 +82,16 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Missing payload'], 400);
     }
 
-   
+   $emprunteurId = $data['emprunteurId'] ?? null;
+
+if ($emprunteurId !== null && $emprunteurId !== '') {
+    $emprunteurEntity = $this->userRepository->find((int) $emprunteurId);
+} else {
+    $emprunteurEntity = null;
+}
 
 
-    $emprunteurEntity = $this->userRepository->find((int)$data['emprunteurId']);
-    if (!$emprunteurEntity) {
-        return $this->json(['error' => 'Emprunteur not found'], 404);
-    }
+    
 
     /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
