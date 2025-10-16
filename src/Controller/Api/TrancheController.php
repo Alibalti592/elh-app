@@ -84,21 +84,14 @@ public function create(Request $request): JsonResponse
 
    
 
-    $obligation = $this->obligationRepository->find((int)$data['obligationId']);
     if (!$obligation) {
         return $this->json(['error' => 'Obligation not found'], 404);
-    }if( (float) $obligation->getRemainingAmount - (float) $data['amount'] < 0){
-        return $this->json(['error' => 'Le montant de la tranche dépasse le montant restant de l\'obligation'], 400);
     }
 
-   $emprunteurId = $data['emprunteurId'] ?? null;
-
-if ($emprunteurId !== null && $emprunteurId !== '') {
-    $emprunteurEntity = $this->userRepository->find((int) $emprunteurId);
-} else {
-    $emprunteurEntity = null;
-}
-    
+    $emprunteurEntity = $this->userRepository->find((int)$data['emprunteurId']);
+    if (!$emprunteurEntity) {
+        return $this->json(['error' => 'Emprunteur not found'], 404);
+    }
 
     /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
@@ -129,6 +122,7 @@ if ($emprunteurId !== null && $emprunteurId !== '') {
             return $this->json(['error' => 'General error: ' . $e->getMessage()], 500);
         }
     }
+    $obligation = $this->obligationRepository->find((int)$data['obligationId']);
 
     $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
@@ -167,7 +161,6 @@ if ($emprunteurId !== null && $emprunteurId !== '') {
 
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
-
    if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
         $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
