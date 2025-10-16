@@ -87,7 +87,10 @@ public function create(Request $request): JsonResponse
     $obligation = $this->obligationRepository->find((int)$data['obligationId']);
     if (!$obligation) {
         return $this->json(['error' => 'Obligation not found'], 404);
+    }if( (float) $obligation->getRemainingAmount - (float) $data['amount'] < 0){
+        return $this->json(['error' => 'Le montant de la tranche dépasse le montant restant de l\'obligation'], 400);
     }
+
    $emprunteurId = $data['emprunteurId'] ?? null;
 
 if ($emprunteurId !== null && $emprunteurId !== '') {
