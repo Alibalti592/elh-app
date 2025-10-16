@@ -29,7 +29,7 @@ class Tranche
     private string $status = 'en attente'; // <-- nouveau champ pour gérer le statut
 
     #[ORM\ManyToOne(targetEntity: User::class)]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?User $emprunteur = null; // <-- utilisateur qui doit accepter/refuser
 #[ORM\Column(type: 'string', length: 255, nullable: true)]
 private ?string $fileUrl = null;
