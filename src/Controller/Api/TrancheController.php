@@ -84,9 +84,6 @@ public function create(Request $request): JsonResponse
 
    
 
-    if (!$obligation) {
-        return $this->json(['error' => 'Obligation not found'], 404);
-    }
 
     $emprunteurEntity = $this->userRepository->find((int)$data['emprunteurId']);
     if (!$emprunteurEntity) {
