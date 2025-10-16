@@ -88,11 +88,14 @@ public function create(Request $request): JsonResponse
     if (!$obligation) {
         return $this->json(['error' => 'Obligation not found'], 404);
     }
+    if(emprunteurId = $data['emprunteurId'] ?? null) {
+            $emprunteurEntity = $this->userRepository->find((int)$data['emprunteurId']);
 
-    $emprunteurEntity = $this->userRepository->find((int)$data['emprunteurId']);
-    if (!$emprunteurEntity) {
-        return $this->json(['error' => 'Emprunteur not found'], 404);
+       
+    } else {
+        $emprunteurEntity = null;
     }
+    
 
     /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
