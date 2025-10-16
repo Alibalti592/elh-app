@@ -61,6 +61,7 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Utilisateur non authentifié'], 401);
     }
 
+    // 1) Read payload (multipart 'tranche' text or raw JSON)
     $data = null;
     $trancheJson = $request->request->get('tranche');
     if (!empty($trancheJson)) {
@@ -79,28 +80,34 @@ public function create(Request $request): JsonResponse
     }
 
     if (!is_array($data)) {
-        return $this->json([
-            'error' => 'Missing payload',
-            'debug' => [
-                'content_type' => $request->headers->get('Content-Type'),
-                'fields_seen'  => $request->request->all(),
-                'files_seen'   => array_keys($request->files->all()),
-            ],
-        ], 400);
+        return $this->json(['error' => 'Missing payload'], 400);
     }
 
+    // 2) Validate fields
     foreach (['obligationId', 'emprunteurId', 'amount', 'paidAt'] as $field) {
         if (!isset($data[$field]) || $data[$field] === '' || $data[$field] === null) {
             return $this->json(['error' => "Missing field: $field"], 400);
         }
     }
 
-    /** @var UploadedFile|null $uploadedFile */
+    // 3) Load entities
+    $obligation = $this->obligationRepository->find((int)$data['obligationId']);
+    if (!$obligation) {
+        return $this->json(['error' => 'Obligation not found'], 404);
+    }
+
+    $emprunteurEntity = $this->userRepository->find((int)$data['emprunteurId']);
+    if (!$emprunteurEntity) {
+        return $this->json(['error' => 'Emprunteur not found'], 404);
+    }
+
+    // 4) Optional file upload (field 'file') -> Firebase -> fileUrl
+    /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
-    if ($uploadedFile instanceof UploadedFile) {
+    if ($uploadedFile) {
         try {
             $projectDir = $this->getParameter('kernel.project_dir');
-            $storage = (new Factory())
+            $storage = (new \Kreait\Firebase\Factory())
                 ->withServiceAccount($projectDir . '/config/firebase_credentials.json')
                 ->withDefaultStorageBucket('mc-connect-5bd22')
                 ->createStorage();
@@ -113,38 +120,22 @@ public function create(Request $request): JsonResponse
                 fopen($uploadedFile->getPathname(), 'r'),
                 [
                     'name' => $fileName,
-                    // 'predefinedAcl' => 'publicRead', // uncomment if your bucket isn't public by default
+                    // 'predefinedAcl' => 'publicRead',
                 ]
             );
 
             $data['fileUrl'] = sprintf('https://storage.googleapis.com/%s/%s', $bucket->name(), $fileName);
-        } catch (FirebaseException $e) {
+        } catch (\Kreait\Firebase\Exception\FirebaseException $e) {
             return $this->json(['error' => 'Firebase error: ' . $e->getMessage()], 500);
         } catch (\Throwable $e) {
             return $this->json(['error' => 'General error: ' . $e->getMessage()], 500);
         }
     }
 
-    $obligation  = $this->obligationRepository->find((int)$data['obligationId']);
-    $emprunteur  = $this->userRepository->find((int)$data['emprunteurId']);
-    if (!$obligation || !$emprunteur) {
-        return $this->json(['error' => 'Obligation or emprunteur not found'], 404);
-    }
-
-    $tranche = new Tranche();
+    // 5) Build tranche
+    $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
-
-    // Determine preteur/emprunteur from obligation type
-    $type = $obligation->getType(); // 'jed', 'onm', etc.
-    if ($type === 'jed') {
-        $preteur = $obligation->getRelatedTo();
-        $emprunteurEntity = $obligation->getCreatedBy();
-    } else {
-        $preteur = $obligation->getCreatedBy();
-        $emprunteurEntity = $obligation->getRelatedTo();
-    }
-
-    $tranche->setEmprunteur($emprunteurEntity);
+    $tranche->setEmprunteur($emprunteurEntity);          // <-- always from payload
     $tranche->setAmount((float)$data['amount']);
 
     try {
@@ -157,10 +148,21 @@ public function create(Request $request): JsonResponse
         $tranche->setFileUrl($data['fileUrl']);
     }
 
-    if ($currentUser && $preteur && $currentUser->getId() === $preteur->getId()) {
+    // 6) Determine preteur for status logic (derive from obligation type)
+    $type = $obligation->getType(); // 'jed', 'onm', etc.
+    if ($type === 'jed') {
+        $preteurEntity = $obligation->getRelatedTo();
+    } else {
+        $preteurEntity = $obligation->getCreatedBy();
+    }
+
+    if ($preteurEntity && $currentUser->getId() === $preteurEntity->getId()) {
         // Preteur creates -> validated
         $tranche->setStatus('validée');
-        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $newRemaining = max(
+            0,
+            (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
+        );
         $obligation->setRemainingAmount($newRemaining);
     } else {
         // Emprunteur creates -> pending
@@ -170,8 +172,9 @@ public function create(Request $request): JsonResponse
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
 
-    if ($tranche->getStatus() === 'en attente' && isset($emprunteurEntity)) {
-        $notif = new NotifToSend();
+    // 7) Optional notification if pending
+    if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
+        $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
         $notif->setTitle("Nouvelle tranche proposée");
         $notif->setMessage("Une nouvelle tranche d’un montant de {$tranche->getAmount()}€ vous est proposée.");
@@ -189,14 +192,13 @@ public function create(Request $request): JsonResponse
     }
 
     return $this->json([
-        'success'                     => true,
-        'trancheId'                   => $tranche->getId(),
-        'status'                      => $tranche->getStatus(),
-        'remainingAmountObligation'   => $obligation->getRemainingAmount(),
-        'fileUrl'                     => $tranche->getFileUrl(),
+        'success'                   => true,
+        'trancheId'                 => $tranche->getId(),
+        'status'                    => $tranche->getStatus(),
+        'remainingAmountObligation' => $obligation->getRemainingAmount(),
+        'fileUrl'                   => $tranche->getFileUrl(),
     ], 201);
 }
-
 
     // -----------------------------
     // Réponse de l'emprunteur
