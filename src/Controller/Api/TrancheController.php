@@ -12,6 +12,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Exception\FirebaseException;
 
 #[Route('/tranche')]
 class TrancheController extends AbstractController
@@ -53,83 +56,132 @@ public function getTranches(Request $request): JsonResponse
 #[Route('/create', name: 'tranche_create', methods: ['POST'])]
 public function create(Request $request): JsonResponse
 {
-    $data = json_decode($request->getContent(), true);
+    $currentUser = $this->getUser();
+    if (!$currentUser) {
+        return $this->json(['error' => 'Utilisateur non authentifié'], 401);
+    }
 
-    // Validation des champs obligatoires
-    $requiredFields = ['obligationId', 'emprunteurId', 'amount', 'paidAt'];
-    foreach ($requiredFields as $field) {
-        if (empty($data[$field])) {
+    $data = null;
+    $trancheJson = $request->request->get('tranche');
+    if (!empty($trancheJson)) {
+        $data = json_decode($trancheJson, true);
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Invalid tranche JSON'], 400);
+        }
+    } else {
+        $raw = $request->getContent();
+        if (!empty($raw)) {
+            $tmp = json_decode($raw, true);
+            if (is_array($tmp)) {
+                $data = $tmp;
+            }
+        }
+    }
+
+    if (!is_array($data)) {
+        return $this->json([
+            'error' => 'Missing payload',
+            'debug' => [
+                'content_type' => $request->headers->get('Content-Type'),
+                'fields_seen'  => $request->request->all(),
+                'files_seen'   => array_keys($request->files->all()),
+            ],
+        ], 400);
+    }
+
+    foreach (['obligationId', 'emprunteurId', 'amount', 'paidAt'] as $field) {
+        if (!isset($data[$field]) || $data[$field] === '' || $data[$field] === null) {
             return $this->json(['error' => "Missing field: $field"], 400);
         }
     }
 
-    // Récupération de l'obligation et de l'emprunteur
-    $obligation = $this->obligationRepository->find($data['obligationId']);
-    $emprunteur = $this->userRepository->find($data['emprunteurId']);
-    $currentUser = $this->getUser();
+    /** @var UploadedFile|null $uploadedFile */
+    $uploadedFile = $request->files->get('file');
+    if ($uploadedFile instanceof UploadedFile) {
+        try {
+            $projectDir = $this->getParameter('kernel.project_dir');
+            $storage = (new Factory())
+                ->withServiceAccount($projectDir . '/config/firebase_credentials.json')
+                ->withDefaultStorageBucket('mc-connect-5bd22')
+                ->createStorage();
 
+            $bucket = $storage->getBucket();
+            $ext = $uploadedFile->guessExtension() ?: 'bin';
+            $fileName = sprintf('tranches/%s.%s', uniqid('tr_', true), $ext);
+
+            $bucket->upload(
+                fopen($uploadedFile->getPathname(), 'r'),
+                [
+                    'name' => $fileName,
+                    // 'predefinedAcl' => 'publicRead', // uncomment if your bucket isn't public by default
+                ]
+            );
+
+            $data['fileUrl'] = sprintf('https://storage.googleapis.com/%s/%s', $bucket->name(), $fileName);
+        } catch (FirebaseException $e) {
+            return $this->json(['error' => 'Firebase error: ' . $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            return $this->json(['error' => 'General error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    $obligation  = $this->obligationRepository->find((int)$data['obligationId']);
+    $emprunteur  = $this->userRepository->find((int)$data['emprunteurId']);
     if (!$obligation || !$emprunteur) {
         return $this->json(['error' => 'Obligation or emprunteur not found'], 404);
     }
 
-    // Création de la tranche
     $tranche = new Tranche();
     $tranche->setObligation($obligation);
 
-    // Déterminer le prêteur et l’emprunteur selon le type d’obligation
-    $type = $obligation->getType(); // 'jed' ou 'emprunt'
-
+    // Determine preteur/emprunteur from obligation type
+    $type = $obligation->getType(); // 'jed', 'onm', etc.
     if ($type === 'jed') {
         $preteur = $obligation->getRelatedTo();
-        $emprunteur = $obligation->getCreatedBy();
+        $emprunteurEntity = $obligation->getCreatedBy();
     } else {
         $preteur = $obligation->getCreatedBy();
-        $emprunteur = $obligation->getRelatedTo();
+        $emprunteurEntity = $obligation->getRelatedTo();
     }
 
-    $tranche->setEmprunteur($emprunteur);
-    $tranche->setAmount($data['amount']);
+    $tranche->setEmprunteur($emprunteurEntity);
+    $tranche->setAmount((float)$data['amount']);
 
     try {
-        $tranche->setPaidAt(new \DateTime($data['paidAt']));
+        $tranche->setPaidAt(new \DateTime((string)$data['paidAt']));
     } catch (\Exception $e) {
         return $this->json(['error' => 'Invalid date format for paidAt'], 400);
     }
 
-    // ✅ Ajout du champ fileUrl (optionnel)
     if (!empty($data['fileUrl'])) {
         $tranche->setFileUrl($data['fileUrl']);
     }
 
-    // Déterminer le statut de la tranche
-    if ($currentUser === $preteur) {
-        // Le prêteur crée la tranche → validée directement
+    if ($currentUser && $preteur && $currentUser->getId() === $preteur->getId()) {
+        // Preteur creates -> validated
         $tranche->setStatus('validée');
-
-        // Mettre à jour le montant restant de l’obligation
         $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
         $obligation->setRemainingAmount($newRemaining);
-    } elseif ($currentUser === $emprunteur) {
-        // L’emprunteur crée la tranche → en attente
+    } else {
+        // Emprunteur creates -> pending
         $tranche->setStatus('en attente');
     }
 
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
 
-    // Notification seulement si l'emprunteur doit accepter
-    if ($tranche->getStatus() === 'en attente') {
+    if ($tranche->getStatus() === 'en attente' && isset($emprunteurEntity)) {
         $notif = new NotifToSend();
-        $notif->setUser($emprunteur);
+        $notif->setUser($emprunteurEntity);
         $notif->setTitle("Nouvelle tranche proposée");
         $notif->setMessage("Une nouvelle tranche d’un montant de {$tranche->getAmount()}€ vous est proposée.");
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
-            'actions' => ['accept', 'decline']
+            'actions'   => ['accept', 'decline'],
         ]));
         $notif->setSendAt(new \DateTime());
         $notif->setType('tranche');
-        $notif->setView("tranche");
+        $notif->setView('tranche');
         $notif->setStatus('pending');
 
         $this->entityManager->persist($notif);
@@ -137,12 +189,12 @@ public function create(Request $request): JsonResponse
     }
 
     return $this->json([
-        'success' => true,
-        'trancheId' => $tranche->getId(),
-        'status' => $tranche->getStatus(),
-        'remainingAmountObligation' => $obligation->getRemainingAmount(),
-        'fileUrl' => $tranche->getFileUrl(),
-    ]);
+        'success'                     => true,
+        'trancheId'                   => $tranche->getId(),
+        'status'                      => $tranche->getStatus(),
+        'remainingAmountObligation'   => $obligation->getRemainingAmount(),
+        'fileUrl'                     => $tranche->getFileUrl(),
+    ], 201);
 }
 
 
