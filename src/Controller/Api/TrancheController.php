@@ -61,7 +61,6 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Utilisateur non authentifié'], 401);
     }
 
-    // 1) Read payload (multipart 'tranche' text or raw JSON)
     $data = null;
     $trancheJson = $request->request->get('tranche');
     if (!empty($trancheJson)) {
@@ -83,14 +82,8 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Missing payload'], 400);
     }
 
-    // 2) Validate fields
-    foreach (['obligationId', 'emprunteurId', 'amount', 'paidAt'] as $field) {
-        if (!isset($data[$field]) || $data[$field] === '' || $data[$field] === null) {
-            return $this->json(['error' => "Missing field: $field"], 400);
-        }
-    }
+   
 
-    // 3) Load entities
     $obligation = $this->obligationRepository->find((int)$data['obligationId']);
     if (!$obligation) {
         return $this->json(['error' => 'Obligation not found'], 404);
@@ -101,7 +94,6 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Emprunteur not found'], 404);
     }
 
-    // 4) Optional file upload (field 'file') -> Firebase -> fileUrl
     /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
     if ($uploadedFile) {
@@ -132,7 +124,6 @@ public function create(Request $request): JsonResponse
         }
     }
 
-    // 5) Build tranche
     $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
     $tranche->setEmprunteur($emprunteurEntity);          // <-- always from payload
@@ -148,7 +139,6 @@ public function create(Request $request): JsonResponse
         $tranche->setFileUrl($data['fileUrl']);
     }
 
-    // 6) Determine preteur for status logic (derive from obligation type)
     $type = $obligation->getType(); // 'jed', 'onm', etc.
     if ($type === 'jed') {
         $preteurEntity = $obligation->getRelatedTo();
@@ -172,8 +162,7 @@ public function create(Request $request): JsonResponse
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
 
-    // 7) Optional notification if pending
-    if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
+=    if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
         $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
         $notif->setTitle("Nouvelle tranche proposée");
