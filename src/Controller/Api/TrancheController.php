@@ -162,7 +162,7 @@ public function create(Request $request): JsonResponse
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
 
-=    if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
+   if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
         $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
         $notif->setTitle("Nouvelle tranche proposée");
