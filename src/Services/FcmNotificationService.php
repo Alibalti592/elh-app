@@ -45,7 +45,7 @@ class FcmNotificationService {
     }
 
 
-    public function sendFcmDefaultNotification($user, $title, $message, $data = null) {
+       public function sendFcmDefaultNotification($user, $title, $message, $data = null) {
         //FCM token
         $fcmTokens = $this->fcmTokenRepository->findBy([
             'user' => $user
