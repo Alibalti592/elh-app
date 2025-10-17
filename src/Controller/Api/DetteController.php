@@ -205,7 +205,7 @@ public function loadDettes(Request $request): Response
         $sendNotifTo = null;
         if (!$isEdit && !empty($data['relatedUserId'])) {
  $userRelated = $this->entityManager->getRepository(User::class)->findOneBy([
-                'id' => $obligationDatas['relatedUserId']
+                'id' => $obligationData['relatedUserId']
             ]);           
              if ($userRelated instanceof User) {
                 $obligation->setRelatedTo($userRelated);
