@@ -169,12 +169,14 @@ public function setFileUrl(?string $fileUrl): self
         }
         $this->adress = $datas['adress'] ?? null;
         $this->amount = $this->transformToFloat($datas['amount'] ?? '0');
+        $this->remainingAmount = $this->transformToFloat($datas['amount'] ?? '0');
         $this->raison = $datas['raison'] ?? null;
         $this->date = isset($datas['date']) ? new \DateTime($datas['date']) : null;
         $this->delay = $datas['delay'] ?? null;
         $this->conditonType = $datas['conditonType'] ?? null;
         $this->moyen = $datas['moyen'] ?? null;
         $this->dateStart = isset($datas['dateStart']) ? new \DateTime($datas['dateStart']) : null;
+        $this->fileUrl = $datas['fileUrl'] ?? null;
         if (isset($datas['relatedUserId'])) {
     // fetch User entity from repository
     $user = $userRepository->find($datas['relatedUserId']);
