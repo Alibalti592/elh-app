@@ -239,6 +239,7 @@ public function loadDettes(Request $request): Response
             'fileUrl'      => $obligation->getFileUrl(),
             'isEdit'       => $isEdit,
         ], 200);
+    }
 
     #[Route('/delete-dette', methods: ['POST'])]
     public function deleteObligation(Request $request): Response
