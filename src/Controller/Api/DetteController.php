@@ -86,106 +86,159 @@ public function loadDettes(Request $request): Response
 
 
 #[Route('/save-dette', methods: ['POST'])]
-public function saveObligation(
-    Request $request,
-    ValidatorInterface $validator,
-    UserRepository $userRepository
-): JsonResponse {
-    $currentUser = $this->getUser();
-    if (!$currentUser) {
-        return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
-    }
-
-    $obligationJson = $request->request->get('obligation');
-    if (empty($obligationJson)) {
-        return new JsonResponse(['error' => 'Payload manquant: obligation'], 400);
-    }
-
-    $data = json_decode($obligationJson, true);
-    if (!is_array($data)) {
-        return new JsonResponse(['error' => 'Payload invalide'], 400);
-    }
-
-    /** @var UploadedFile|null $uploadedFile */
-    $uploadedFile = $request->files->get('file');
-    if ($uploadedFile instanceof UploadedFile) {
-        try {
-            // Initialize Firebase Storage
-            $storage = (new Factory())
-                ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
-                ->withDefaultStorageBucket('mc-connect-5bd22') // bucket name only
-                ->createStorage();
-
-            $bucket = $storage->getBucket();
-
-            // Build a unique path (optional "obligations/" folder)
-            $ext = $uploadedFile->guessExtension() ?: 'bin';
-            $fileName = sprintf('obligations/%s.%s', uniqid('obh_', true), $ext);
-
-            // Upload the binary
-            $bucket->upload(
-                fopen($uploadedFile->getPathname(), 'r'),
-                [
-                    'name' => $fileName,
-                    // If your bucket is NOT public by default, uncomment next line:
-                    // 'predefinedAcl' => 'publicRead',
-                ]
-            );
-
-            // Public URL (works if the object is publicly readable)
-            $data['fileUrl'] = sprintf('https://storage.googleapis.com/%s/%s', $bucket->name(), $fileName);
-        } catch (FirebaseException $e) {
-            return new JsonResponse(['error' => 'Firebase error: ' . $e->getMessage()], 500);
-        } catch (\Throwable $e) {
-            return new JsonResponse(['error' => 'General error: ' . $e->getMessage()], 500);
+    public function saveObligation(
+        Request $request,
+        ValidatorInterface $validator,
+        UserRepository $userRepository
+    ): JsonResponse {
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
         }
-    }
 
-    $obligation = new Obligation();
-    $amount = isset($data['amount']) ? (string) $data['amount'] : '0';
-
-    $obligation->setType($data['type'] ?? 'jed');
-    $obligation->setAmount($amount);
-    $obligation->setRemainingAmount((float) $amount);
-    $obligation->setCreatedBy($currentUser);
-    $obligation->setCreatedAt(new \DateTimeImmutable());
-    $obligation->setTel($data['tel'] ?? null);
-$obligation->setFirstname($data['firstname'] ?? null);
-$obligation->setLastname($data['lastname'] ?? null);
-    $obligation->setRaison($data['note'] ?? ($data['raison'] ?? null));
-
-    $obligation->setStatus($data['status'] ?? 'ini');
-    $obligation->setDateStart(!empty($data['dateStart']) ? new \DateTime($data['dateStart']) : null);
-    $obligation->setDate(!empty($data['date']) ? new \DateTime($data['date']) : null);
-    $obligation->setFileUrl($data['fileUrl'] ?? null);
-
-    if (!empty($data['relatedUserId'])) {
-        $relatedUser = $userRepository->find($data['relatedUserId']);
-        if ($relatedUser) {
-            $obligation->setRelatedTo($relatedUser);
+        // Read payload (multipart/form-data with "obligation" json and optional file "file")
+        $rawJson = $request->request->get('obligation');
+        if (empty($rawJson)) {
+            return new JsonResponse(['error' => 'Payload manquant: obligation'], 400);
         }
-    }
 
-    $errors = $validator->validate($obligation);
-    if (count($errors) > 0) {
-        $errorMessages = [];
-        foreach ($errors as $error) {
-            $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+        $data = json_decode($rawJson, true);
+        if (!is_array($data)) {
+            return new JsonResponse(['error' => 'Payload invalide'], 400);
         }
-        return new JsonResponse(['errors' => $errorMessages], 400);
-    }
-
-    $this->entityManager->persist($obligation);
-    $this->entityManager->flush();
-
-    return new JsonResponse([
-        'message' => 'Dette enregistrée avec succès',
-        'obligationId' => $obligation->getId(),
-        'fileUrl' => $obligation->getFileUrl(), // convenient echo
-    ], 200);
-}
 
 
+        $obligation = null;
+        $isEdit = false;
+
+        $id = $data['id'] ?? null;
+        if (!empty($id)) {
+            $isEdit = true;
+            $obligation = $this->entityManager->getRepository(Obligation::class)->find($id);
+
+            // Permission check: author OR relatedTo can edit (same as legacy)
+            $canEdit = true;
+            if (is_null($obligation)) {
+                $canEdit = false;
+            } elseif ($currentUser->getId() !== $obligation->getCreatedBy()->getId()) {
+                $canEdit = false;
+                if (!is_null($obligation?->getRelatedTo()) && $currentUser->getId() == $obligation->getRelatedTo()?->getId()) {
+                    $canEdit = true;
+                }
+            }
+            if (!$canEdit) {
+                return new JsonResponse(['error' => 'Vous n’êtes pas autorisé à modifier cette dette'], 403);
+            }
+        }
+
+        if (is_null($obligation)) {
+            $obligation = new Obligation();
+            $obligation->setCreatedBy($currentUser);
+            $obligation->setCreatedAt(new \DateTimeImmutable());
+        }
+
+    
+        /** @var UploadedFile|null $uploadedFile */
+        $uploadedFile = $request->files->get('file');
+        $newFileUrl = null;
+
+        if ($uploadedFile instanceof UploadedFile) {
+            try {
+                // Initialize Firebase Storage
+                $storage = (new Factory())
+                    ->withServiceAccount(\dirname(_DIR_, 3) . '/config/firebase_credentials.json')
+                    ->withDefaultStorageBucket('mc-connect-5bd22') // bucket name only
+                    ->createStorage();
+
+                $bucket = $storage->getBucket();
+
+                // Build unique path
+                $ext = $uploadedFile->guessExtension() ?: 'bin';
+                $fileName = sprintf('obligations/%s.%s', uniqid('obh_', true), $ext);
+
+                // Upload and make publicly readable to avoid 403 AccessDenied
+                $bucket->upload(
+                    fopen($uploadedFile->getPathname(), 'r'),
+                    [
+                        'name' => $fileName,
+                        'predefinedAcl' => 'publicRead', // <-- makes object public
+                    ]
+                );
+
+                $newFileUrl = sprintf('https://storage.googleapis.com/%s/%s', $bucket->name(), $fileName);
+
+                // On EDIT, if there was an old fileUrl, try to delete it (best-effort)
+                if ($isEdit && $obligation->getFileUrl()) {
+                    $oldUrl = $obligation->getFileUrl();
+                    $prefix = 'https://storage.googleapis.com/' . $bucket->name() . '/';
+                    if (str_starts_with($oldUrl, $prefix)) {
+                        $oldPath = substr($oldUrl, strlen($prefix));
+                        try {
+                            $bucket->object($oldPath)->delete();
+                        } catch (\Throwable $e) {
+                            // ignore cleanup failure
+                        }
+                    }
+                }
+
+                // set immediately; "setFromUI" will not override it
+                $data['fileUrl'] = $newFileUrl;
+            } catch (FirebaseException $e) {
+                return new JsonResponse(['error' => 'Firebase error: ' . $e->getMessage()], 500);
+            } catch (\Throwable $e) {
+                return new JsonResponse(['error' => 'General error: ' . $e->getMessage()], 500);
+            }
+        }
+
+        if (isset($data['adress'])) {
+            $data['adress'] = $this->utilsService->limitText($data['adress'], 500);
+        }
+        if (isset($data['raison'])) {
+            $data['raison'] = $this->utilsService->limitText($data['raison'], 500);
+        }
+
+        // Let legacy mapper handle the rest of fields
+        // (dates, amount, status, tel, firstname, lastname, note/raison, etc.)
+        $obligation->setFromUI($data, $isEdit);
+
+        // Set related user only on CREATE (same as legacy)
+        $sendNotifTo = null;
+        if (!$isEdit && !empty($data['relatedUserId'])) {
+            $userRelated = $userRepository->find($data['relatedUserId']);
+            if ($userRelated instanceof User) {
+                $obligation->setRelatedTo($userRelated);
+                $sendNotifTo = $userRelated;
+            }
+        }
+
+        // If fileUrl was set by upload, ensure entity has it (in case setFromUI ignores it)
+        if ($newFileUrl) {
+            $obligation->setFileUrl($newFileUrl);
+        } elseif (!empty($data['fileUrl'])) {
+            // allow preserving or setting an existing URL coming from UI
+            $obligation->setFileUrl($data['fileUrl']);
+        }
+
+      
+       
+       
+
+        $this->entityManager->persist($obligation);
+        // persist currentUser as in legacy (if needed for counters etc.)
+        $this->entityManager->persist($currentUser);
+        $this->entityManager->flush();
+
+        // Notify on CREATE (legacy behavior); add your own "updated" notif if desired
+        if ($sendNotifTo) {
+            $this->notificationService->notifForNewObligation($obligation);
+        }
+
+        return new JsonResponse([
+            'message'      => $isEdit ? 'Dette mise à jour avec succès' : 'Dette enregistrée avec succès',
+            'obligationId' => $obligation->getId(),
+            'fileUrl'      => $obligation->getFileUrl(),
+            'isEdit'       => $isEdit,
+        ], 200);
 
     #[Route('/delete-dette', methods: ['POST'])]
     public function deleteObligation(Request $request): Response
