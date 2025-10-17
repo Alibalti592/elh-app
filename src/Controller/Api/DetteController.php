@@ -204,8 +204,10 @@ public function loadDettes(Request $request): Response
         // Set related user only on CREATE (same as legacy)
         $sendNotifTo = null;
         if (!$isEdit && !empty($data['relatedUserId'])) {
-            $userRelated = $userRepository->find($data['relatedUserId']);
-            if ($userRelated instanceof User) {
+ $userRelated = $this->entityManager->getRepository(User::class)->findOneBy([
+                'id' => $obligationDatas['relatedUserId']
+            ]);           
+             if ($userRelated instanceof User) {
                 $obligation->setRelatedTo($userRelated);
                 $sendNotifTo = $userRelated;
             }
