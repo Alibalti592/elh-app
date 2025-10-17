@@ -177,11 +177,7 @@ public function setFileUrl(?string $fileUrl): self
         $this->moyen = $datas['moyen'] ?? null;
         $this->dateStart = isset($datas['dateStart']) ? new \DateTime($datas['dateStart']) : null;
         $this->fileUrl = $datas['fileUrl'] ?? null;
-        if (isset($datas['relatedUserId'])) {
-    // fetch User entity from repository
-    $user = $userRepository->find($datas['relatedUserId']);
-    $this->relatedTo = $user;
-}
+   
     }
 
     private function transformToFloat($input): float {
