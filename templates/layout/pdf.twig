@@ -138,7 +138,9 @@
           <div class="dette">
             <div class="title">Preteur : <strong>{{ jed.cardOtherName }} </strong>| Tel : </span>{{ jed.cardOtherTel }}</div>
             <div class="title">Emprunteur : {{ jed.createdByName }}</div>
-            <div class="info"><span>Montant : </span>{{ jed.amount }}€</div>
+            <div class="info"><span>Montant initial : </span>{{ jed.amount }}€</div>
+            <div class="info"><span>Montant restant : </span>{{ jed.remainingAmout }}€</div>
+
             <div class="info"><span>Date : </span>{{ jed.dateDisplay }}</div>
           </div>
         {% endfor %}
@@ -149,7 +151,9 @@
           <div class="dette">
             <div class="title">Emprunteur : <strong>{{ onm.cardOtherName }} </strong>| Tel : </span>{{ onm.cardOtherTel }}</div>
             <div class="title">Preteur : {{ onm.createdByName }}</div>
-            <div class="info"><span>Montant : </span>{{ onm.amount }}€</div>
+            <div class="info"><span>Montant initial : </span>{{ onm.amount }}€</div>
+            <div class="info"><span>Montant restant : </span>{{ onm.remainingAmount }}€</div>
+
             <div class="info"><span>Date : </span>{{ onm.dateDisplay }}</div>
           </div>
         {% endfor %}
