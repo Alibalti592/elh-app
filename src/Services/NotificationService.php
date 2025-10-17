@@ -154,31 +154,47 @@ class NotificationService {
         $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $data);
     }
 
-    public function notifForNewObligation(Obligation $obligation) {
-        $createdBy = $obligation->getCreatedBy();
-        $userName = $createdBy->getFirstname()." ".$createdBy->getLastname();
-        if(!is_null($obligation->getRelatedTo())) {
-            $relatedTo = $obligation->getRelatedTo();
-            $title = "Prêt partagée";
-            $message =  "$userName a ajouté une dette";
-            $type = $obligation->getType();
-            if($type == 'onm') {
-                $title = "Dette partagée";
-                $message =  "$userName a ajouté un prêt";
-            } elseif ($type == 'amana') {
-                $title = "Amana partagée";
-                $message =  "$userName a ajouté une amana";
-            }
-            $data['view'] = "obligation_list_view";
-            if($type == 'jed') {
-                $type = 'onm';
-            } elseif ($type == 'onm') {
-                $type = 'jed';
-            }
-            $data['type'] = $type;
-            $this->fcmNotificationService->sendFcmDefaultNotification($relatedTo, $title, $message, $data);
+   public function notifForNewObligation(Obligation $obligation): void
+{
+    $createdBy = $obligation->getCreatedBy();
+    $userName = trim(($createdBy?->getFirstname() ?? '') . ' ' . ($createdBy?->getLastname() ?? ''));
+
+    if ($obligation->getRelatedTo() instanceof User) {
+        $relatedTo = $obligation->getRelatedTo();
+
+        $title = "Prêt partagée";
+        $message = "$userName a ajouté une dette";
+        $type = $obligation->getType();
+
+        if ($type === 'onm') {
+            $title = "Dette partagée";
+            $message = "$userName a ajouté un prêt";
+        } elseif ($type === 'amana') {
+            $title = "Amana partagée";
+            $message = "$userName a ajouté une amana";
+        }
+
+        // Build payload safely (instead of using an undefined $data)
+        $notifType = match ($type) {
+            'jed' => 'onm',
+            'onm' => 'jed',
+            default => $type,
+        };
+
+        $payload = [
+            'view' => 'obligation_list_view',
+            'type' => $notifType,
+        ];
+
+        // Never let a notif failure break the save
+        try {
+            $this->fcmNotificationService->sendFcmDefaultNotification($relatedTo, $title, $message, $payload);
+        } catch (\Throwable $e) {
+            // Optional: log and swallow
+            // $this->logger->warning('FCM notif failed', ['ex' => $e]);
         }
     }
+}
 
     public function notifForObligationEchance(Obligation $obligation) {
         $createdBy = $obligation->getCreatedBy();
