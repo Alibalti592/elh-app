@@ -138,7 +138,7 @@ public function create(Request $request): JsonResponse
     $type = $obligation->getType(); // 'jed', 'onm', etc.
    
     $obligationCreator = $obligation->getCreatedBy();
-
+$emprunteurEntity = null;
     if ($obligationCreator && $currentUser->getId() === $obligationCreator->getId() && $type === 'onm') {
         // Preteur creates -> validated
         $tranche->setStatus('validée');
