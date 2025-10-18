@@ -9,6 +9,8 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
+
+
 class NotifController extends AbstractController
 {
     #[Route('/notif/{id}/respond', name: 'notif_respond', methods: ['POST'])]
@@ -64,9 +66,15 @@ public function respondNotif(
 
     // New route to fetch all notifications
     #[Route('/notifs', name: 'fetch_notifications', methods: ['GET'])]
-    public function fetchNotifications(NotifToSendRepository $notifRepo): JsonResponse
+     public function fetchNotifications(Request $request,NotifToSendRepository $notifRepo): Response
+   
     {
-        $notifications = $notifRepo->findAll();
+        $currentUser = $this->getUser();
+         if (!$currentUser) {
+            return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
+        }
+        $notifications = $notifRepo
+            ->findBy(['user' => $currentUser], ['sendAt' => 'DESC']);
 
         $data = array_map(function($notif) {
             return [
@@ -82,4 +90,5 @@ public function respondNotif(
 
         return $this->json($data);
     }
+    
 }
