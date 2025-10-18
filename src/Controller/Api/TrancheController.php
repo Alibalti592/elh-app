@@ -151,16 +151,14 @@ public function create(Request $request): JsonResponse
 
     } else {
              $tranche->setStatus('en attente');
+              $emprunteurEntity = $obligation->getRelatedTo();
 
          
     }
 
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
-    if($tranche->getStatus()=== 'en attente'){
-        $emprunteurEntity = $obligation->getRelatedTo();
-
-    }
+  
    if ($emprunteurEntity) {
         $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
