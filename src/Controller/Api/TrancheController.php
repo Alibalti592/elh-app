@@ -140,29 +140,32 @@ if ($emprunteurId !== null && $emprunteurId !== '') {
     }
 
     $type = $obligation->getType(); // 'jed', 'onm', etc.
-    if ($type === 'jed') {
-        $preteurEntity = $obligation->getRelatedTo();
-    } else {
-        $preteurEntity = $obligation->getCreatedBy();
-    }
+   
+    $obligationCreator = $obligation->getCreatedBy();
 
-    if ($preteurEntity && $currentUser->getId() === $preteurEntity->getId()) {
+    if ($obligationCreator && $currentUser->getId() === $obligationCreator->getId() && $type === 'onm') {
         // Preteur creates -> validated
-               $tranche->setStatus('en attente');
-
-        $obligation->setRemainingAmount($newRemaining);
-    } else {
-        // Emprunteur creates -> pending
-         $tranche->setStatus('validée');
+        $tranche->setStatus('validée');
         $newRemaining = max(
             0,
             (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
+             $obligation->setRemainingAmount($newRemaining);
+
         );
+
+    } else {
+             $tranche->setStatus('en attente');
+
+         
     }
 
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
-   if ($tranche->getStatus() === 'en attente' && $emprunteurEntity) {
+    if($tranche->getStatus()=== 'en attente'){
+        $emprunteurEntity = $obligation->getRelatedTo();
+
+    }
+   if ($emprunteurEntity) {
         $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
         $notif->setTitle("Nouvelle tranche proposée");
