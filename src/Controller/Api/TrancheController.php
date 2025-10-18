@@ -145,9 +145,9 @@ public function create(Request $request): JsonResponse
         $newRemaining = max(
             0,
             (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
-             $obligation->setRemainingAmount($newRemaining);
+            );
+            $obligation->setRemainingAmount($newRemaining);
 
-        );
 
     } else {
              $tranche->setStatus('en attente');
