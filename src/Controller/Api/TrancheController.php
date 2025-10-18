@@ -84,11 +84,7 @@ public function create(Request $request): JsonResponse
 
    $emprunteurId = $data['emprunteurId'] ?? null;
 
-if ($emprunteurId !== null && $emprunteurId !== '') {
-    $emprunteurEntity = $this->userRepository->find((int) $emprunteurId);
-} else {
-    $emprunteurEntity = null;
-}
+
 
 
     
@@ -126,7 +122,7 @@ if ($emprunteurId !== null && $emprunteurId !== '') {
 
     $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
-    $tranche->setEmprunteur($emprunteurEntity);          // <-- always from payload
+       // <-- always from payload
     $tranche->setAmount((float)$data['amount']);
 
     try {
