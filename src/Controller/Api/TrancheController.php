@@ -148,15 +148,16 @@ if ($emprunteurId !== null && $emprunteurId !== '') {
 
     if ($preteurEntity && $currentUser->getId() === $preteurEntity->getId()) {
         // Preteur creates -> validated
-        $tranche->setStatus('validée');
+               $tranche->setStatus('en attente');
+
+        $obligation->setRemainingAmount($newRemaining);
+    } else {
+        // Emprunteur creates -> pending
+         $tranche->setStatus('validée');
         $newRemaining = max(
             0,
             (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
         );
-        $obligation->setRemainingAmount($newRemaining);
-    } else {
-        // Emprunteur creates -> pending
-        $tranche->setStatus('en attente');
     }
 
     $this->entityManager->persist($tranche);
