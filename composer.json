@@ -17,7 +17,7 @@
         "dompdf/dompdf": "^3.1",
         "geniusts/hijri-dates": "^1.1",
         "gesdinet/jwt-refresh-token-bundle": "^1.2",
-        "google/apiclient": "^2.15",
+        "google/apiclient": "^2",
         "kreait/firebase-php": "^7.16",
         "league/csv": "^9.21",
         "lexik/jwt-authentication-bundle": "^3.1",
