@@ -22,6 +22,9 @@ class Obligation
     private string $remainingAmount;
 
     #[ORM\Column(length: 255, nullable: true)]
+    private ?string $curreny = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $firstname = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -131,7 +134,9 @@ public function setFileUrl(?string $fileUrl): self
 
     public function getConditonType(): ?string { return $this->conditonType; }
     public function setConditonType(?string $conditonType): static { $this->conditonType = $conditonType; return $this; }
-
+	
+public function getCurrency(): ?string { return $this->currency; }
+    public function setCurrency(?string $currency): static { $this->currency = $currency ; return $this; }
     public function getMoyen(): ?string { return $this->moyen; }
     public function setMoyen(?string $moyen): static { $this->moyen = $moyen; return $this; }
 
@@ -153,7 +158,7 @@ public function setFileUrl(?string $fileUrl): self
     public function getStatus(): string { return $this->status ?? 'ini'; }
     public function setStatus(?string $status): static { $this->status = $status; return $this; }
 
-    public function getDeletedAt(): ?\DateTimeImmutable { return $this->deletedAt; }
+    public function getDeletedAt(): ?\DateTimeImmutable { return $this->deletedAt; }	
     public function setDeletedAt(?\DateTimeImmutable $deletedAt): static { $this->deletedAt = $deletedAt; return $this; }
 
     public function getTranches(): Collection { return $this->tranches; }
@@ -177,6 +182,7 @@ public function setFileUrl(?string $fileUrl): self
         $this->moyen = $datas['moyen'] ?? null;
         $this->dateStart = isset($datas['dateStart']) ? new \DateTime($datas['dateStart']) : null;
         $this->fileUrl = $datas['fileUrl'] ?? null;
+$this->currency = $datas['currency'] ?? null;
    
     }
 
