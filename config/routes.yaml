@@ -17,6 +17,11 @@ api:
 
 api_login_check:
     path: /elh-api/login_check
+    
+app_api_user_registergoogleflutter_testapi:
+    path: /elh-api/test-api/sign-in-with-google-flutter
+    controller: App\Controller\Api\UserController::registerGoogleFlutter
+    methods: [POST]
 
 gesdinet_jwt_refresh_token:
     path: /elh-api/token/refresh
