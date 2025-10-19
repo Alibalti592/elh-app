@@ -22,6 +22,10 @@ security:
                 check_path: /elh-api/login_check # or api_login_check as defined in config/routes.yaml
                 success_handler: lexik_jwt_authentication.handler.authentication_success
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
+                
+        test_api_public:
+            pattern: ^/elh-api/test-api/sign-in-with-google-flutter
+            security: false
 
         api:
             pattern: ^/elh-api
@@ -52,7 +56,8 @@ security:
     access_control:
          - { path: ^/elhadm, roles: ROLE_ADMIN }
          - { path: ^/elh-api/(login|token/refresh), roles: PUBLIC_ACCESS }
-         - { path: ^/elh-api/user-registration, roles: PUBLIC_ACCESS }
+         - { path: ^user-registration, roles: PUBLIC_ACCESS }
+         - { path: ^/elh-api/test-api/sign-in-with-google-flutter, roles: PUBLIC_ACCESS }
          - { path: ^/elh-api,       roles: IS_AUTHENTICATED_FULLY }
 
 
