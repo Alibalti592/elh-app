@@ -19,7 +19,9 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\HttpKernel\Attribute\AsController;
 
+#[AsController]
 class UserController extends AbstractController
 {
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UserUI $userUI,
@@ -246,6 +248,60 @@ class UserController extends AbstractController
         $jsonResponse->setData();
         return $jsonResponse;
     }
+#[Route('/test-api/sign-in-with-google-flutter', name: 'app_api_user_registergoogleflutter_testapi', methods: ['POST'])]
+public function registerGoogleFlutter(Request $request): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+    $email = $data['email'] ?? null;
+
+    $jsonResponse = new JsonResponse();
+
+    if (!$email) {
+        $jsonResponse->setStatusCode(400);
+        $jsonResponse->setData(['message' => 'Email is required']);
+        return $jsonResponse;
+    }
+
+    $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);
+
+    if (is_null($user)) {
+        $jsonResponse->setStatusCode(404);
+        $jsonResponse->setData(['message' => "Compte introuvable"]);
+        return $jsonResponse;
+    }
+
+    // optional: block login for deleted/disabled users (you already use UserChecker for other flows)
+    if (!is_null($user->getDeletedAt()) || !$user->isEnabled()) {
+        $jsonResponse->setStatusCode(403);
+        $jsonResponse->setData(['message' => "Compte bloqué"]);
+        return $jsonResponse;
+    }
+
+    try {
+        // Reuse your existing CsrfTokenService which already creates JWT for a user in your codebase
+        $tokens = $this->csrfTokenService->createNewJWT($user);
+
+        // createNewJWT seems to return an array (you used ['newToken'] previously). Be flexible:
+        $tokenString = $tokens['newToken'] ?? $tokens['token'] ?? null;
+        $refreshTokenString = $tokens['refreshToken'] ?? $tokens['refresh_token'] ?? null;
+
+        $responseData = [
+            'token' => $tokenString,
+            // include refresh token if present
+            'refreshToken' => $refreshTokenString,
+            // include basic user UI payload (optional)
+            'user' => $this->userUI->getUserProfilUI($user),
+        ];
+
+        $jsonResponse->setData($responseData);
+        return $jsonResponse;
+    } catch (\Exception $e) {
+        $this->logger->error('RegisterGoogleFlutter error: '.$e->getMessage());
+        $jsonResponse->setStatusCode(500);
+        $jsonResponse->setData(['message' => "Une erreur s'est produite, merci de réessayer plus tard."]);
+        return $jsonResponse;
+    }
+}
 
 
 }
