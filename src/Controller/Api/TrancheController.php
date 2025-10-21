@@ -56,7 +56,7 @@ public function getTranches(Request $request): JsonResponse
 #[Route('/create', name: 'tranche_create', methods: ['POST'])]
 public function create(Request $request): JsonResponse
 {
-    $currentUser = $this->getUser();
+   
    
 
     $data = null;
