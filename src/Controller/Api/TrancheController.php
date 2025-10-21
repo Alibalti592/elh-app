@@ -57,9 +57,7 @@ public function getTranches(Request $request): JsonResponse
 public function create(Request $request): JsonResponse
 {
     $currentUser = $this->getUser();
-    if (!$currentUser) {
-        return $this->json(['error' => 'Utilisateur non authentifié'], 401);
-    }
+   
 
     $data = null;
     $trancheJson = $request->request->get('tranche');
