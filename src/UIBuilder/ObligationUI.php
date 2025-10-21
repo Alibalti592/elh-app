@@ -26,7 +26,7 @@ class ObligationUI {
         $createdByName = $createdBy->getFullname();
         $creancierFirstName = ucfirst($obligation->getFirstname());
         $creancierLastName = ucfirst($obligation->getLastname());
-
+	$currency = $obligation->getCurrency();	
         $emprunteurName = "";
         $emprunteurNum = "";
         $preteurName = "";
@@ -131,6 +131,7 @@ class ObligationUI {
     'date' => $obligation->getDate()?->format('Y-m-d'),
     'dateDisplay' => $obligation->getDate()?->format('d/m/Y'),
     'raison' => $obligation->getRaison(),
+    'currency'=> $obligation->getCurrency(),
     'delay' => $obligation->getDelay(),
     'conditonType' => $obligation->getConditonType(),
     'conditonTypeDisplay' => $conditonTypeDisplay,
