@@ -21,8 +21,8 @@ class Obligation
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
     private string $remainingAmount;
 
-    #[ORM\Column(length: 255, nullable: true)]
-    private ?string $curreny = null;
+    #[ORM\Column(length: 3, nullable: true)]
+    private ?string $currency = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $firstname = null;
@@ -133,9 +133,8 @@ public function setFileUrl(?string $fileUrl): self
     public function setDelay(?string $delay): static { $this->delay = $delay; return $this; }
 
     public function getConditonType(): ?string { return $this->conditonType; }
-    public function setConditonType(?string $conditonType): static { $this->conditonType = $conditonType; return $this; }
-	
-public function getCurrency(): ?string { return $this->currency; }
+    public function setConditonType(?string $conditonType): static { $this->conditonType = $conditonType; return $this; }	
+    public function getCurrency(): ?string { return $this->currency; }
     public function setCurrency(?string $currency): static { $this->currency = $currency ; return $this; }
     public function getMoyen(): ?string { return $this->moyen; }
     public function setMoyen(?string $moyen): static { $this->moyen = $moyen; return $this; }
