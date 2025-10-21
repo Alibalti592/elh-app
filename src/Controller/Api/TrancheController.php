@@ -57,7 +57,7 @@ public function getTranches(Request $request): JsonResponse
 public function create(Request $request): JsonResponse
 {
    
-
+    $currentUser = $this->getUser();
     $data = null;
     $trancheJson = $request->request->get('tranche');
     if (!empty($trancheJson)) {
