@@ -88,7 +88,8 @@ public function respondNotif(
             ];
         }, $notifications);
 
-        return $this->json($data);
+        // return $this->json($data);
+          return new JsonResponse($data);
     }
     
 }
