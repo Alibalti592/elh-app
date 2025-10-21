@@ -57,7 +57,6 @@ public function getTranches(Request $request): JsonResponse
 public function create(Request $request): JsonResponse
 {
    
-   
 
     $data = null;
     $trancheJson = $request->request->get('tranche');
@@ -84,16 +83,13 @@ public function create(Request $request): JsonResponse
 
 
 
-
-    
-
     /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
     if ($uploadedFile) {
         try {
-            $projectDir = $this->getParameter('kernel.project_dir');
-            $storage = (new \Kreait\Firebase\Factory())
-                ->withServiceAccount($projectDir . '/config/firebase_credentials.json')
+           
+            $storage = (new Factory())
+                ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
                 ->withDefaultStorageBucket('mc-connect-5bd22')
                 ->createStorage();
 
