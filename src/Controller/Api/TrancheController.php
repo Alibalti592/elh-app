@@ -234,6 +234,8 @@ if ($relatedToEntity) {
         'status'                    => $tranche->getStatus(),
         'remainingAmountObligation' => $obligation->getRemainingAmount(),
         'fileUrl'                   => $tranche->getFileUrl(),
+        'relatedToId'              => $relatedToEntity ,
+        'creator'                  => $obligationCreator ,
     ], 201);
 }
 
