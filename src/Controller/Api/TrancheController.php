@@ -79,7 +79,7 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Missing payload'], 400);
     }
 
-   $emprunteurId = $data['emprunteurId'] ?? null;
+   
 
 
 
@@ -159,7 +159,8 @@ if (!$relatedToEntity) {
    if ($relatedToEntity) {
         $notif = new \App\Entity\NotifToSend();
         if($currentUser->getId() !== $obligationCreator->getId() && $type === 'jed'){
-            $obligationCreatorEntity = $this->userRepository->find($obligationCreator->getId());
+            $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
+                'id' => $obligationCreator->getId()]);
  $notif->setUser($obligationCreator->getId());
 
 
@@ -192,7 +193,8 @@ $notif->setUser($relatedToEntity->getId());
         $notif->setView('tranche');
         $notif->setStatus('accept');
         }else if($currentUser->getId() === $obligationCreator->getId() && $type === 'onm'){
-             $obligationCreatorEntity = $this->userRepository->find($obligationCreator->getId());
+              $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
+                'id' => $obligationCreator->getId()]);
     $notif->setUser($relatedToEntity->getId());
  $notif->setTitle("Un nouveau versement a été proposé par {$obligationCreatorEntity->getFirstname()} {$obligationCreatorEntity->getLastname()}");
          $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ vous est proposée.");
