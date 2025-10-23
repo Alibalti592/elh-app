@@ -157,77 +157,76 @@ if (!$relatedToEntity) {
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
   
-   if ($relatedToEntity) {
-        $notif = new \App\Entity\NotifToSend();
-        if($currentUser->getId() !== $obligationCreator->getId() && $type === 'jed'){
-            $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
-                'id' => $obligationCreator]);
- $notif->setUser($obligationCreator->getId());
+   // --- replace your whole "if ($relatedToEntity) { ... }" block with this ---
+if ($relatedToEntity) {
+    $notif = new NotifToSend();
 
+    // tiny helper (inline) to format names safely
+    $fullName = function (?User $u): string {
+        if (!$u) return 'Utilisateur';
+        $fn = method_exists($u, 'getFirstname') ? (string)$u->getFirstname() : '';
+        $ln = method_exists($u, 'getLastname') ? (string)$u->getLastname() : '';
+        $name = trim($fn . ' ' . $ln);
+        return $name !== '' ? $name : 'Utilisateur';
+    };
 
-
-
-        $notif->setTitle("Un nouveau versement a été proposé par {$obligationCreatorEntity->getFirstname()} {$obligationCreatorEntity->getLastname()}");
-         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ vous est proposée.");
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'actions'   => ['accept', 'decline'],
-        ]));
-        $notif->setSendAt(new \DateTime());
-        $notif->setType('tranche');
-        $notif->setView('tranche');
-        $notif->setStatus('pending');
-        } else if ($currentUser->getId() === $obligationCreator->getId() && $type === 'jed'){
-$notif->setUser($relatedToEntity->getId());
-
-
-
-
-        $notif->setTitle("Un nouveau versement a été ajouté par {$obligation->getFirstname()} {$obligation->getLastname()}");
-         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ a été ajouté.");
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'status'   => 'accept',
-        ]));
-        $notif->setSendAt(new \DateTime());
-        $notif->setType('tranche');
-        $notif->setView('tranche');
-        $notif->setStatus('accept');
-        }else if($currentUser->getId() === $obligationCreator->getId() && $type === 'onm'){
-              $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
-                'id' => $obligationCreator]);
-    $notif->setUser($relatedToEntity->getId());
- $notif->setTitle("Un nouveau versement a été proposé par {$obligationCreatorEntity->getFirstname()} {$obligationCreatorEntity->getLastname()}");
-         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ vous est proposée.");
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'actions'   => ['accept', 'decline'],
-        ]));
-        $notif->setSendAt(new \DateTime());
-        $notif->setType('tranche');
-        $notif->setView('tranche');
-        $notif->setStatus('pending');
-        }else{
-            $notif->setUser($relatedToEntity->getId());
-
-
-
-
-        $notif->setTitle("Un nouveau versement a été ajouté par {$obligation->getFirstname()} {$obligation->getLastname()}");
-         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ a été ajouté.");
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'status'   => 'accept',
-        ]));
-        $notif->setSendAt(new \DateTime());
-        $notif->setType('tranche');
-        $notif->setView('tranche');
-        $notif->setStatus('accept');
+    // CASE 1: Someone other than the creator proposes a tranche on 'jed' -> notify creator (PENDING)
+    if ($currentUser->getId() !== ($obligationCreator?->getId()) && $type === 'jed') {
+        if (!$obligationCreator) {
+            return $this->json(['error' => 'Créateur de l’obligation introuvable'], 500);
         }
 
-        $this->entityManager->persist($notif);
-        $this->entityManager->flush();
+        $notif->setUser($obligationCreator); // <-- ENTITY, not ID
+        $notif->setTitle('Un nouveau versement a été proposé par ' . $fullName($currentUser));
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé.');
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'actions'   => ['accept', 'decline'],
+        ], JSON_UNESCAPED_UNICODE));
+        $notif->setStatus('pending');
+
+    // CASE 2: Creator adds tranche directly on 'jed' -> notify related user (ACCEPT)
+    } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'jed') {
+        $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
+        $notif->setTitle('Un nouveau versement a été ajouté par ' . $fullName($currentUser));
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté.');
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status'    => 'accept',
+        ], JSON_UNESCAPED_UNICODE));
+        $notif->setStatus('accept');
+
+    // CASE 3: Creator proposes on 'onm' -> notify related user (PENDING)
+    } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'onm') {
+        $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
+        $notif->setTitle('Un nouveau versement a été proposé par ' . $fullName($currentUser));
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé.');
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'actions'   => ['accept', 'decline'],
+        ], JSON_UNESCAPED_UNICODE));
+        $notif->setStatus('pending');
+
+    // CASE 4: Fallback -> notify related user (ACCEPT)
+    } else {
+        $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
+        $notif->setTitle('Un nouveau versement a été ajouté par ' . $fullName($currentUser));
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté.');
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status'    => 'accept',
+        ], JSON_UNESCAPED_UNICODE));
+        $notif->setStatus('accept');
     }
+
+    $notif->setSendAt(new \DateTime());
+    $notif->setType('tranche');
+    $notif->setView('tranche');
+
+    $this->entityManager->persist($notif);
+    $this->entityManager->flush();
+}
+
 
     return $this->json([
         'success'                   => true,
