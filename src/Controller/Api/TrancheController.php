@@ -161,7 +161,7 @@ if (!$relatedToEntity) {
         $notif = new \App\Entity\NotifToSend();
         if($currentUser->getId() !== $obligationCreator->getId() && $type === 'jed'){
             $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
-                'id' => $obligationCreator->getId()]);
+                'id' => $obligationCreator]);
  $notif->setUser($obligationCreator->getId());
 
 
@@ -195,7 +195,7 @@ $notif->setUser($relatedToEntity->getId());
         $notif->setStatus('accept');
         }else if($currentUser->getId() === $obligationCreator->getId() && $type === 'onm'){
               $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
-                'id' => $obligationCreator->getId()]);
+                'id' => $obligationCreator]);
     $notif->setUser($relatedToEntity->getId());
  $notif->setTitle("Un nouveau versement a été proposé par {$obligationCreatorEntity->getFirstname()} {$obligationCreatorEntity->getLastname()}");
          $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ vous est proposée.");
