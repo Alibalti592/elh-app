@@ -194,7 +194,7 @@ if ($relatedToEntity) {
             'trancheId' => $tranche->getId(),
             'status'    => 'accept',
         ], JSON_UNESCAPED_UNICODE));
-        $notif->setStatus('accept');
+        $notif->setStatus('pending');
 
     // CASE 3: Creator proposes on 'onm' -> notify related user (PENDING)
     } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'onm') {
@@ -216,7 +216,7 @@ if ($relatedToEntity) {
             'trancheId' => $tranche->getId(),
             'status'    => 'accept',
         ], JSON_UNESCAPED_UNICODE));
-        $notif->setStatus('accept');
+        $notif->setStatus('pending');
     }
 
     $notif->setSendAt(new \DateTime());
