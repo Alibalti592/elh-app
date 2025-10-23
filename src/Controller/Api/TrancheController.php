@@ -236,6 +236,7 @@ if ($relatedToEntity) {
         'fileUrl'                   => $tranche->getFileUrl(),
         'relatedToId'              => $relatedToEntity ,
         'creator'                  => $obligationCreator ,
+        'notif'                    => $notif
     ], 201);
 }
 
