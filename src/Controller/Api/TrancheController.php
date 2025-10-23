@@ -159,7 +159,7 @@ if (!$emprunteurEntity) {
    if ($emprunteurEntity) {
         $notif = new \App\Entity\NotifToSend();
         $notif->setUser($emprunteurEntity);
-        $notif->setTitle("Nouvelle tranche proposée {$emprunteurEntity->getId()}");
+        $notif->setTitle("Nouvelle tranche proposée par {$obligation->getFirstname()}");
         $notif->setMessage("Une nouvelle tranche d’un montant de {$tranche->getAmount()}€ vous est proposée.");
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
