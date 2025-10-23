@@ -15,6 +15,7 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\FirebaseException;
+use App\Entity\User;
 
 #[Route('/tranche')]
 class TrancheController extends AbstractController
@@ -79,7 +80,7 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Missing payload'], 400);
     }
 
-   $emprunteurId = $data['emprunteurId'] ?? null;
+   
 
 
 
@@ -132,9 +133,9 @@ public function create(Request $request): JsonResponse
     $type = $obligation->getType(); // 'jed', 'onm', etc.
    
     $obligationCreator = $obligation->getCreatedBy();
-          $emprunteurEntity = $obligation->getRelatedTo();
+          $relatedToEntity = $obligation->getRelatedTo();
 
-if (!$emprunteurEntity) {
+if (!$relatedToEntity) {
     $tranche->setStatus('validée');
     $newRemaining = max(
         0,
@@ -156,11 +157,18 @@ if (!$emprunteurEntity) {
     $this->entityManager->persist($tranche);
     $this->entityManager->flush();
   
-   if ($emprunteurEntity) {
+   if ($relatedToEntity) {
         $notif = new \App\Entity\NotifToSend();
-        $notif->setUser($emprunteurEntity);
-        $notif->setTitle("Nouvelle tranche proposée par {$obligation->getFirstname()}");
-        $notif->setMessage("Une nouvelle tranche d’un montant de {$tranche->getAmount()}€ vous est proposée.");
+        if($currentUser->getId() !== $obligationCreator->getId() && $type === 'jed'){
+            $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
+                'id' => $obligationCreator->getId()]);
+ $notif->setUser($obligationCreator->getId());
+
+
+
+
+        $notif->setTitle("Un nouveau versement a été proposé par {$obligationCreatorEntity->getFirstname()} {$obligationCreatorEntity->getLastname()}");
+         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ vous est proposée.");
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
             'actions'   => ['accept', 'decline'],
@@ -169,6 +177,53 @@ if (!$emprunteurEntity) {
         $notif->setType('tranche');
         $notif->setView('tranche');
         $notif->setStatus('pending');
+        } else if ($currentUser->getId() === $obligationCreator->getId() && $type === 'jed'){
+$notif->setUser($relatedToEntity->getId());
+
+
+
+
+        $notif->setTitle("Un nouveau versement a été ajouté par {$obligation->getFirstname()} {$obligation->getLastname()}");
+         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ a été ajouté.");
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status'   => 'accept',
+        ]));
+        $notif->setSendAt(new \DateTime());
+        $notif->setType('tranche');
+        $notif->setView('tranche');
+        $notif->setStatus('accept');
+        }else if($currentUser->getId() === $obligationCreator->getId() && $type === 'onm'){
+              $obligationCreatorEntity = $this->entityManager->getRepository(User::class)->findOneBy([
+                'id' => $obligationCreator->getId()]);
+    $notif->setUser($relatedToEntity->getId());
+ $notif->setTitle("Un nouveau versement a été proposé par {$obligationCreatorEntity->getFirstname()} {$obligationCreatorEntity->getLastname()}");
+         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ vous est proposée.");
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'actions'   => ['accept', 'decline'],
+        ]));
+        $notif->setSendAt(new \DateTime());
+        $notif->setType('tranche');
+        $notif->setView('tranche');
+        $notif->setStatus('pending');
+        }else{
+            $notif->setUser($relatedToEntity->getId());
+
+
+
+
+        $notif->setTitle("Un nouveau versement a été ajouté par {$obligation->getFirstname()} {$obligation->getLastname()}");
+         $notif->setMessage("Un nouveau versement d’un montant de {$tranche->getAmount()}€ a été ajouté.");
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status'   => 'accept',
+        ]));
+        $notif->setSendAt(new \DateTime());
+        $notif->setType('tranche');
+        $notif->setView('tranche');
+        $notif->setStatus('accept');
+        }
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
@@ -218,7 +273,7 @@ if (!$emprunteurEntity) {
         // ---- Notification au créateur ----
         $notif = new NotifToSend();
 $notif->setUser($tranche->getObligation()->getCreatedBy());
-        $notif->setTitle("Réponse à une tranche");
+        $notif->setTitle("Réponse à un versement");
         $notif->setMessage($message);
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
@@ -236,7 +291,7 @@ $notif->setUser($tranche->getObligation()->getCreatedBy());
             'status' => $tranche->getStatus()
         ]);
     }
-    #[Route('/update/{id}', name: 'tranche_update', methods: ['POST', 'PUT', 'PATCH'])]
+ #[Route('/update/{id}', name: 'tranche_update', methods: ['POST', 'PUT', 'PATCH'])]
 public function update(Request $request, int $id): JsonResponse
 {
     $currentUser = $this->getUser();
@@ -251,35 +306,59 @@ public function update(Request $request, int $id): JsonResponse
         return $this->json(['error' => 'Obligation introuvable pour cette tranche'], 400);
     }
 
-    // permission: only obligation creator or admin
+    // permission check
     $isCreator = $obligation->getCreatedBy() && $currentUser && $currentUser->getId() === $obligation->getCreatedBy()->getId();
     if (!$isCreator && !$this->isGranted('ROLE_ADMIN')) {
         return $this->json(['error' => 'Accès refusé'], 403);
     }
 
-    // parse payload (multipart 'tranche' or raw json)
-    $data = null;
-    $trancheJson = $request->getContent(); // ✅ contains your JSON
+    // --------------------------
+    // Robust payload parsing
+    // --------------------------
+    $data = [];
 
-    if (!empty($trancheJson)) {
-        $data = json_decode($trancheJson, true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'Invalid tranche JSON'], 400);
+    // 1) Try raw JSON body (typical for application/json)
+    $content = (string) $request->getContent();
+    if ($content !== '') {
+        $decoded = json_decode($content, true);
+        if (is_array($decoded)) {
+            $data = $decoded;
         }
-    } else {
-        $raw = $request->getContent();
-        if (!empty($raw)) {
-            $tmp = json_decode($raw, true);
-            if (is_array($tmp)) {
-                $data = $tmp;
+    }
+
+    // 2) If not found, some multipart clients embed a JSON payload inside a form field (e.g. 'tranche' or 'payload')
+    if (empty($data)) {
+        $possibleJsonFields = ['tranche', 'data', 'payload', 'json', 'body'];
+        foreach ($possibleJsonFields as $k) {
+            if ($request->request->has($k)) {
+                $maybe = $request->request->get($k);
+                if (!empty($maybe)) {
+                    $try = json_decode((string)$maybe, true);
+                    if (is_array($try)) {
+                        $data = $try;
+                        break;
+                    }
+                }
             }
         }
     }
+
+    // 3) Fallback to normal form fields (typical for multipart/form-data)
+    if (empty($data)) {
+        $post = $request->request->all();
+        if (!empty($post) && is_array($post)) {
+            $data = $post;
+        }
+    }
+
+    // Guarantee array
     if (!is_array($data)) {
         $data = [];
     }
 
-    // handle optional file upload (same as create)
+    // --------------------------
+    // File upload (same as before) - ensure you use 'file' as part name from client
+    // --------------------------
     /** @var UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
     if ($uploadedFile) {
@@ -306,20 +385,27 @@ public function update(Request $request, int $id): JsonResponse
         }
     }
 
-    // capture old values before we change the entity
+    // --------------------------
+    // Existing update logic (defensive)
+    // --------------------------
     $oldAmount = (float)$tranche->getAmount();
     $oldStatus = $tranche->getStatus();
 
-    // update amount if provided
-    if (array_key_exists('amount', $data)) {
-        $newAmount = (float)$data['amount'];
+    // amount: update only if key exists and not empty string/null
+    if (array_key_exists('amount', $data) && $data['amount'] !== null && $data['amount'] !== '') {
+        if (is_numeric($data['amount'])) {
+            $newAmount = (float)$data['amount'];
+        } else {
+            $maybe = str_replace(',', '.', (string)$data['amount']);
+            $newAmount = is_numeric($maybe) ? (float)$maybe : $oldAmount;
+        }
         $tranche->setAmount($newAmount);
     } else {
         $newAmount = $oldAmount;
     }
 
     // paidAt
-    if (!empty($data['paidAt'])) {
+    if (array_key_exists('paidAt', $data) && $data['paidAt'] !== null && trim((string)$data['paidAt']) !== '') {
         try {
             $tranche->setPaidAt(new \DateTime((string)$data['paidAt']));
         } catch (\Exception $e) {
@@ -328,41 +414,36 @@ public function update(Request $request, int $id): JsonResponse
     }
 
     // fileUrl
-    if (array_key_exists('fileUrl', $data)) {
+    if (array_key_exists('fileUrl', $data) && $data['fileUrl'] !== null && $data['fileUrl'] !== '') {
         $tranche->setFileUrl($data['fileUrl']);
     }
 
-    // new status (if provided)
-    if (array_key_exists('status', $data)) {
-        $newStatus = $data['status'];
+    // status
+    if (array_key_exists('status', $data) && $data['status'] !== null && $data['status'] !== '') {
+        $newStatus = (string)$data['status'];
     } else {
         $newStatus = $oldStatus;
     }
 
-    // update emprunteur if provided
-    if (!empty($data['emprunteurId'])) {
+    if (array_key_exists('emprunteurId', $data) && $data['emprunteurId'] !== null && $data['emprunteurId'] !== '') {
         $empr = $this->userRepository->find((int)$data['emprunteurId']);
         if ($empr) {
             $tranche->setEmprunteur($empr);
         }
     }
 
-    // set status on tranche
     $tranche->setStatus($newStatus);
 
-    // statuses that *reduce* the obligation remaining amount
+    // recalc remaining (kept your logic)
     $reductionStatuses = ['validée', 'tranche accepte'];
 
-    // --- Preferred approach: Recalculate remaining from all tranches if obligation has an original total ---
     if (method_exists($obligation, 'getAmount')) {
-        // Sum amounts of accepted/validated tranches in DB excluding the current tranche,
-        // then add the current tranche's amount if its newStatus is reducing.
         $qb = $this->entityManager->createQueryBuilder();
         $qb->select('COALESCE(SUM(t.amount), 0)')
             ->from(\App\Entity\Tranche::class, 't')
             ->where('t.obligation = :obligation')
             ->andWhere('t.id != :currentId')
-            ->andWhere($qb->expr()->in('t.status', ':statuses'))
+            ->andWhere('t.status IN (:statuses)')
             ->setParameter('obligation', $obligation)
             ->setParameter('currentId', $tranche->getId())
             ->setParameter('statuses', $reductionStatuses);
@@ -370,7 +451,6 @@ public function update(Request $request, int $id): JsonResponse
         try {
             $sumFromDb = (float)$qb->getQuery()->getSingleScalarResult();
         } catch (\Throwable $e) {
-            // in case query fails for unexpected reasons, fall back to delta logic below
             $sumFromDb = null;
         }
 
@@ -379,12 +459,11 @@ public function update(Request $request, int $id): JsonResponse
             if (in_array($newStatus, $reductionStatuses, true)) {
                 $sumPaid += (float)$newAmount;
             }
-            // get original obligation total (replace getAmount if your getter is different)
             $total = (float)$obligation->getAmount();
             $newRemaining = max(0, $total - $sumPaid);
             $obligation->setRemainingAmount($newRemaining);
         } else {
-            // fallback to delta approach if DB sum failed
+            // fallback delta approach
             $oldAmount = (float)$oldAmount;
             $newAmount = (float)$newAmount;
             $remaining = (float)$obligation->getRemainingAmount();
@@ -393,13 +472,10 @@ public function update(Request $request, int $id): JsonResponse
             $isReducing = in_array($newStatus, $reductionStatuses, true);
 
             if ($wasReducing && !$isReducing) {
-                // previously reduced -> roll it back
                 $remaining = $remaining + $oldAmount;
             } elseif (!$wasReducing && $isReducing) {
-                // now reduces -> subtract new amount
                 $remaining = max(0, $remaining - $newAmount);
             } elseif ($wasReducing && $isReducing) {
-                // both reduce -> adjust by delta
                 $delta = $newAmount - $oldAmount;
                 if (abs($delta) > 0.00001) {
                     $remaining = max(0, $remaining - $delta);
@@ -408,7 +484,7 @@ public function update(Request $request, int $id): JsonResponse
             $obligation->setRemainingAmount($remaining);
         }
     } else {
-        // --- Fallback / backwards-compatible delta approach (original logic) ---
+        // fallback delta-only logic
         $oldAmount = (float)$oldAmount;
         $newAmount = (float)$newAmount;
         $remaining = (float)$obligation->getRemainingAmount();
@@ -417,13 +493,10 @@ public function update(Request $request, int $id): JsonResponse
         $isReducing = in_array($newStatus, $reductionStatuses, true);
 
         if ($wasReducing && !$isReducing) {
-            // previously reduced the remaining amount -> roll it back
             $remaining = $remaining + $oldAmount;
         } elseif (!$wasReducing && $isReducing) {
-            // now reduces the remaining amount -> subtract newAmount
             $remaining = max(0, $remaining - $newAmount);
         } elseif ($wasReducing && $isReducing) {
-            // both reduce: adjust by the delta (positive delta reduces remaining, negative increases)
             $delta = $newAmount - $oldAmount;
             if (abs($delta) > 0.00001) {
                 $remaining = max(0, $remaining - $delta);
@@ -433,10 +506,9 @@ public function update(Request $request, int $id): JsonResponse
         $obligation->setRemainingAmount($remaining);
     }
 
-    // persist and flush everything once
     $this->entityManager->flush();
 
-    // notification for emprunteur (unchanged)
+    // notification (unchanged)
     if ($tranche->getEmprunteur()) {
         $notif = new NotifToSend();
         $notif->setUser($tranche->getEmprunteur());
@@ -458,7 +530,9 @@ public function update(Request $request, int $id): JsonResponse
         'success' => true,
         'trancheId' => $tranche->getId(),
         'status' => $tranche->getStatus(),
-        'remainingAmountObligation' => $obligation->getRemainingAmount(),
+        'amount' => (float)$tranche->getAmount(),
+        'paidAt' => $tranche->getPaidAt() ? $tranche->getPaidAt()->format('Y-m-d') : null,
+        'remainingAmountObligation' => (float)$obligation->getRemainingAmount(),
         'fileUrl' => $tranche->getFileUrl(),
     ]);
 }
