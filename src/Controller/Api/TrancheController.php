@@ -177,8 +177,8 @@ if ($relatedToEntity) {
         }
 
         $notif->setUser($obligationCreator); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été proposé par ' . $fullName($currentUser));
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé.');
+        $notif->setTitle('Un nouveau versement a été proposé');
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
             'actions'   => ['accept', 'decline'],
@@ -188,8 +188,8 @@ if ($relatedToEntity) {
     // CASE 2: Creator adds tranche directly on 'jed' -> notify related user (ACCEPT)
     } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'jed') {
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été ajouté par ' . $fullName($currentUser));
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté.');
+        $notif->setTitle('Un nouveau versement a été ajouté');
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
             'status'    => 'accept',
@@ -199,8 +199,8 @@ if ($relatedToEntity) {
     // CASE 3: Creator proposes on 'onm' -> notify related user (PENDING)
     } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'onm') {
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été proposé par ' . $fullName($currentUser));
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé.');
+        $notif->setTitle('Un nouveau versement a été proposé ');
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
             'actions'   => ['accept', 'decline'],
@@ -210,8 +210,8 @@ if ($relatedToEntity) {
     // CASE 4: Fallback -> notify related user (ACCEPT)
     } else {
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été ajouté par ' . $fullName($currentUser));
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté.');
+        $notif->setTitle('Un nouveau versement a été ajouté');
+        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
             'status'    => 'accept',
