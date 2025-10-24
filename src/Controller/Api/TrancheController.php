@@ -510,16 +510,29 @@ public function update(Request $request, int $id): JsonResponse
 
     $this->entityManager->flush();
 
+      
+          $relatedToEntity = $obligation->getRelatedTo();
+            $obligationCreator = $obligation->getCreatedBy();
     // notification (unchanged)
-    if ($tranche->getEmprunteur()) {
+    if ($relatedToEntity) {
+        $sendToUser = null;
+        $fromUser = null;
+        if($obligationCreator && $currentUser->getId() === $obligationCreator->getId()) {
+            $sendToUser = $relatedToEntity;
+            $fromUser = $obligationCreator;
+        } else {
+            $sendToUser = $obligationCreator;
+            $fromUser = $relatedToEntity;
+        }
         $notif = new NotifToSend();
-        $notif->setUser($tranche->getEmprunteur());
-        $notif->setTitle("Mise à jour d'une tranche");
-        $notif->setMessage("Une tranche liée à l'obligation #{$obligation->getId()} a été mise à jour.");
+        $notif->setUser($sendToUser);
+        $notif->setTitle("Mise à jour d'un versement");
+        $notif->setMessage("Un versement lié à {$fromUser->getFirstName()} {$fromUser->getLastName()} a été mis à jour.");
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
             'status' => $tranche->getStatus()
         ]));
+        $notif->setStatus('pending');
         $notif->setSendAt(new \DateTime());
         $notif->setType('tranche');
         $notif->setView('tranche');
@@ -580,16 +593,30 @@ public function delete(int $id): JsonResponse
     $this->entityManager->flush();
 
     // send notification to creator
-    $creator = $obligation->getCreatedBy();
-    if ($creator) {
+  $relatedToEntity = $obligation->getRelatedTo();
+            $obligationCreator = $obligation->getCreatedBy();
+    if ($relatedToEntity) {
+        $sendToUser = null;
+        $fromUser = null;
+        if($obligationCreator && $currentUser->getId() === $obligationCreator->getId()) {
+            $sendToUser = $relatedToEntity;
+            $fromUser = $obligationCreator;
+        } else {
+            $sendToUser = $obligationCreator;
+            $fromUser = $relatedToEntity;
+        }
         $notif = new NotifToSend();
-        $notif->setUser($creator);
-        $notif->setTitle("Tranche supprimée");
-        $notif->setMessage("Une tranche (ID: {$id}) liée à votre obligation a été supprimée.");
-        $notif->setDatas(json_encode(['trancheId' => $id]));
+        $notif->setUser($sendToUser);
+        $notif->setTitle("Un versement a été supprimé");
+        $notif->setMessage("Un versement a été supprimé par {$fromUser->getFirstName()} {$fromUser->getLastName()}.");
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status' => $tranche->getStatus()
+        ]));
         $notif->setSendAt(new \DateTime());
         $notif->setType('tranche');
         $notif->setView('tranche');
+        $notif->setStatus('pending');
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
