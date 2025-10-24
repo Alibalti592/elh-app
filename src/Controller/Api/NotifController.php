@@ -76,7 +76,7 @@ public function respondNotif(
             return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
         }
         $notifications = $notifRepo
-            ->findBy(['user' => $currentUser], ['sendAt' => 'DESC']);
+            ->findBy(['user' => $currentUser, 'type' => 'tranche', 'status' => 'pending'], ['sendAt' => 'DESC']);
 
         $data = array_map(function($notif) {
             return [
