@@ -199,7 +199,7 @@ if ($relatedToEntity) {
     // CASE 3: Creator proposes on 'onm' -> notify related user (PENDING)
     } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'onm') {
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été proposé ');
+        $notif->setTitle('Un nouveau versement a été proposé');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
