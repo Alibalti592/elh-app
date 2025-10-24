@@ -16,16 +16,22 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\FirebaseException;
 use App\Entity\User;
-
+use App\Services\FcmNotificationService;
 #[Route('/tranche')]
 class TrancheController extends AbstractController
 {
+    private $fcmNotificationService;
     public function __construct(
         private EntityManagerInterface $entityManager,
         private ObligationRepository $obligationRepository,
         private TrancheRepository $trancheRepository,
-        private UserRepository $userRepository
-    ) {}
+        private UserRepository $userRepository,
+        FcmNotificationService $fcmNotificationService
+    ) {
+        $this->fcmNotificationService = $fcmNotificationService;
+    }
+
+  
 
 #[Route('/tranche', methods: ['GET'])]
 public function getTranches(Request $request): JsonResponse
@@ -169,13 +175,13 @@ if ($relatedToEntity) {
         $name = trim($fn . ' ' . $ln);
         return $name !== '' ? $name : 'Utilisateur';
     };
-
+    $sendToUser = null;
     // CASE 1: Someone other than the creator proposes a tranche on 'jed' -> notify creator (PENDING)
     if ($currentUser->getId() !== ($obligationCreator?->getId()) && $type === 'jed') {
         if (!$obligationCreator) {
             return $this->json(['error' => 'Créateur de l’obligation introuvable'], 500);
         }
-
+        $sendToUser = $obligationCreator;
         $notif->setUser($obligationCreator); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été proposé');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
@@ -187,6 +193,7 @@ if ($relatedToEntity) {
 
     // CASE 2: Creator adds tranche directly on 'jed' -> notify related user (ACCEPT)
     } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'jed') {
+        $sendToUser = $relatedToEntity;
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été ajouté');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
@@ -198,6 +205,7 @@ if ($relatedToEntity) {
 
     // CASE 3: Creator proposes on 'onm' -> notify related user (PENDING)
     } elseif ($currentUser->getId() === ($obligationCreator?->getId()) && $type === 'onm') {
+        $sendToUser = $relatedToEntity;
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été proposé');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
@@ -209,6 +217,8 @@ if ($relatedToEntity) {
 
     // CASE 4: Fallback -> notify related user (ACCEPT)
     } else {
+        $sendToUser = $relatedToEntity;
+         
         $notif->setUser($relatedToEntity); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été ajouté');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
@@ -225,6 +235,7 @@ if ($relatedToEntity) {
 
     $this->entityManager->persist($notif);
     $this->entityManager->flush();
+    $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
 }
 
 
@@ -539,6 +550,7 @@ public function update(Request $request, int $id): JsonResponse
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
+         $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
     }
 
     return $this->json([
@@ -620,6 +632,7 @@ public function delete(int $id): JsonResponse
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
+          $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
     }
 
     return $this->json([
