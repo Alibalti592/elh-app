@@ -93,5 +93,48 @@ public function respondNotif(
         // return $this->json($data);
           return new JsonResponse($data);
     }
+
+      #[Route('/notifs/ack', name: 'notif_ack_bulk', methods: ['POST'])]
+    public function ackBulk(
+        Request $request,
+        NotifToSendRepository $notifRepo,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
+        }
+
+        $payload = json_decode($request->getContent(), true) ?? [];
+        $ids = $payload['ids'] ?? [];
+
+        // sanitize: ints only, unique
+        $ids = array_values(array_unique(array_map('intval', array_filter($ids, fn($v) => is_numeric($v)))));
+
+        if (empty($ids)) {
+            return $this->json(['updated' => 0, 'ids' => []]);
+        }
+
+        // fetch only current user's notifs
+        $qb = $notifRepo->createQueryBuilder('n');
+        $notifs = $qb->where($qb->expr()->in('n.id', ':ids'))
+            ->andWhere('n.user = :user')
+            ->setParameter('ids', $ids)
+            ->setParameter('user', $currentUser)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($notifs as $n) {
+            // Set the notification itself to "validée"
+            $n->setStatus('validée');
+        }
+
+        $em->flush();
+
+        return $this->json([
+            'updated' => count($notifs),
+            'ids' => array_map(fn($n) => $n->getId(), $notifs),
+        ]);
+    }
     
 }
