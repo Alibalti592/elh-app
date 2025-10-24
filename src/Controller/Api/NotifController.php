@@ -118,9 +118,9 @@ public function respondNotif(
         // fetch only current user's notifs
         $qb = $notifRepo->createQueryBuilder('n');
         $notifs = $qb->where($qb->expr()->in('n.id', ':ids'))
-            ->andWhere('n.user = :user')
+           
             ->setParameter('ids', $ids)
-            ->setParameter('user', $currentUser)
+            
             ->getQuery()
             ->getResult();
 
