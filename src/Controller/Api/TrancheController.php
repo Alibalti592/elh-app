@@ -161,6 +161,17 @@ if (!$relatedToEntity) {
      if($newRemaining <= 0) {
         $obligation->setStatus('refund');
     }
+} elseif($obligationCreator && $currentUser->getId() === $relatedToEntity->getId() && $type === 'jed') {
+    $tranche->setStatus('validée');
+    $newRemaining = max(
+        0,
+        (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
+    );
+    $obligation->setRemainingAmount($newRemaining);
+     if($newRemaining <= 0) {
+        $obligation->setStatus('refund');
+    }
+
 } else {
 
     $tranche->setStatus('en attente');
