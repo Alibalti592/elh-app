@@ -72,6 +72,7 @@ public function respondNotif(
     return $this->json([
         'success' => true,
         'status' => $notif->getStatus(),
+        'newRenaingAmount' => isset($newRemaining) ? $newRemaining : null,
     ]);
 }
 
