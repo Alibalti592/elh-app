@@ -51,6 +51,7 @@ public function respondNotif(
                 $obligation = $tranche->getObligation();
                 $newRemaining = max(0, $obligation->getRemainingAmount() - $tranche->getAmount());
                 if($tranche->getAmount() > $obligation->getRemainingAmount()){
+                     $notif->setStatus('decline');
                     $tranche->setStatus('refusée');
                     $em->flush();
                     return $this->json(['error' => 'Montant de la tranche supérieur au montant restant de l\'obligation'], 400);
