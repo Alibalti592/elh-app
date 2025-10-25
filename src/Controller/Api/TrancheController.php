@@ -194,7 +194,7 @@ if ($relatedToEntity) {
     };
     $sendToUser = null;
     // CASE 1: Someone other than the creator proposes a tranche on 'jed' -> notify creator (PENDING)
-    if($obligationCreator && $currentUser->getId() === $obligationCreator->getId() && $type === 'jed'){
+    if($obligationCreator && $currentUser->getId() === $obligationCreator->getId() && $type === 'onm'){
          $sendToUser = $relatedToEntity;
         $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été ajouté');
@@ -205,7 +205,7 @@ if ($relatedToEntity) {
         ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
 
-    }elseif($obligationCreator && $currentUser->getId() === $relatedToEntity->getId() && $type === 'onm'){
+    }elseif($obligationCreator && $currentUser->getId() === $relatedToEntity->getId() && $type === 'jed'){
          $sendToUser = $obligationCreator;
         $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été ajouté');
@@ -215,7 +215,7 @@ if ($relatedToEntity) {
             'status'    => 'accept',
         ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
-    }elseif($obligationCreator && $currentUser->getId() !== $relatedToEntity->getId() && $type === 'onm'){
+    }elseif($obligationCreator && $currentUser->getId() !== $relatedToEntity->getId() && $type === 'jed'){
          $sendToUser = $obligationCreator;
         $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été proposé');
@@ -225,7 +225,7 @@ if ($relatedToEntity) {
             'actions'   => ['accept', 'decline'],
         ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
-    }elseif($obligationCreator && $currentUser->getId() !== $obligationCreator->getId() && $type === 'jed'){
+    }elseif($obligationCreator && $currentUser->getId() !== $obligationCreator->getId() && $type === 'onm'){
          $sendToUser = $relatedToEntity;
         $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été proposé');
