@@ -248,7 +248,8 @@ if ($relatedToEntity) {
 
     $this->entityManager->persist($notif);
     $this->entityManager->flush();
-    $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
+     $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
+   
 }
 
 
@@ -323,7 +324,8 @@ if ($relatedToEntity) {
 
         return $this->json([
             'success' => true,
-            'status' => $tranche->getStatus()
+            'status' => $tranche->getStatus(),
+            'newRemaingAmount' => $newRemainingAmount,
         ]);
     }
  #[Route('/update/{id}', name: 'tranche_update', methods: ['POST', 'PUT', 'PATCH'])]
