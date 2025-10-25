@@ -49,12 +49,22 @@ public function respondNotif(
                 $tranche->setStatus('validée');
 
                 $obligation = $tranche->getObligation();
+                $newRemaining = max(0, $obligation->getRemainingAmount() - $tranche->getAmount());
+                if($newRemaining < 0){
+                    return $this->json(['error' => 'Montant de la tranche supérieur au montant restant de l\'obligation'], 400);
+                }
                 if ($obligation) {
-                    $newRemaining = max(0, $obligation->getRemainingAmount() - $tranche->getAmount());
                     $obligation->setRemainingAmount($newRemaining);
+                    if($newRemaining == 0){
+                        $obligation->setStatus('refund');
+                    }
                 }
             }
         }
+    }else{
+         $trancheId = $notifData['trancheId'] ?? null;
+         $tranche = $trancheRepo->find($trancheId);
+          $tranche->setStatus('refusée');
     }
 
     $em->flush();
