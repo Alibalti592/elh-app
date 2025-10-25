@@ -148,6 +148,9 @@ if (!$relatedToEntity) {
         (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
     );
     $obligation->setRemainingAmount($newRemaining);
+    if($newRemaining <= 0) {
+        $obligation->setStatus('refund');
+    }
 } elseif ($obligationCreator && $currentUser->getId() === $obligationCreator->getId() && $type === 'jed') {
     $tranche->setStatus('validée');
     $newRemaining = max(
@@ -155,6 +158,9 @@ if (!$relatedToEntity) {
         (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
     );
     $obligation->setRemainingAmount($newRemaining);
+     if($newRemaining <= 0) {
+        $obligation->setStatus('refund');
+    }
 } else {
 
     $tranche->setStatus('en attente');
@@ -271,9 +277,14 @@ if ($relatedToEntity) {
             $message = "La tranche a été acceptée par le préteur.";
             // Mise à jour de remainingAmount
     $obligation = $tranche->getObligation();
+    $newRemainingAmount = $obligation->getRemainingAmount() - $tranche->getAmount();
+    if($newRemainingAmount <= 0) {
+        $obligation->setStatus('refund');
+    }
     $obligation->setRemainingAmount(
         $obligation->getRemainingAmount() - $tranche->getAmount()
     );
+
         } elseif ($data['response'] === 'decline') {
             $tranche->setStatus('tranche refuse');
             $message = "La tranche a été refusée par le préteur.";

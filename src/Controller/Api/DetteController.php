@@ -63,8 +63,9 @@ public function loadDettes(Request $request): Response
         // Add uploaded file URL if exists
         $obUI['fileUrl'] = $obligation->getFileUrl() ?? null;
 
+        $amount = $obligation->getRemainingAmount() ?? $obligation->getAmount();
         if ($filter == 'processing' || $filter == 'refund') {
-            $totalAmount += floatval($obligation->getAmount());
+            $totalAmount += floatval($amount);
         }
 
         $obligationUIs[] = $obUI;
