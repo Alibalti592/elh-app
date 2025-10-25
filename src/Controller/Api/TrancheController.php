@@ -289,7 +289,10 @@ if ($relatedToEntity) {
             // Mise à jour de remainingAmount
     $obligation = $tranche->getObligation();
     $newRemainingAmount = $obligation->getRemainingAmount() - $tranche->getAmount();
-    if($newRemainingAmount <= 0) {
+    if($newRemainingAmount < 0) {
+       return $this->json(['error' => 'Le montant de la tranche dépasse le montant restant de l\'obligation'], 400);
+    }
+    if($newRemainingAmount == 0) {
         $obligation->setStatus('refund');
     }
     $obligation->setRemainingAmount(
