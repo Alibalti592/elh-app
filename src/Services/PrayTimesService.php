@@ -77,30 +77,35 @@ class PrayTimesService
     return $praytimesUI;
 }
 
-
-   public function getUserPrayTimes($userLocation, $timestampday)
+public function getUserPrayTimes($userLocation, $timestampday)
 {
     $this->setCalcMethod(6); // UOIF 12°
 
-    // 1) Decide the timezone to use for THIS user
-    // Ideally you store tz on the Location entity, e.g. "Africa/Tunis"
-    $tzName = method_exists($userLocation, 'getTimezone') && $userLocation->getTimezone()
+    // 1) Resolve user's IANA timezone
+    $tzName = (method_exists($userLocation, 'getTimezone') && $userLocation->getTimezone())
         ? $userLocation->getTimezone()
-        : 'Africa/Tunis'; // fallback; change to your default
+        : 'Africa/Tunis'; // sensible default; adjust for your app
 
     $tz = new \DateTimeZone($tzName);
 
-    // 2) Get the offset for the *specific* date (handles DST correctly if present)
+    // 2) Build the date in the *user's* tz for the target day
+    //    (important: do NOT use getdate(); it uses PHP default tz)
     $dt = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
-    $offsetHours = $tz->getOffset($dt) / 3600.0; // keep as float
+    $year  = (int)$dt->format('Y');
+    $month = (int)$dt->format('n');
+    $day   = (int)$dt->format('j');
 
-    // 3) Use the user's coordinates
+    // 3) Compute the offset (in hours, float OK) for that exact day (handles DST if any)
+    $offsetHours = $tz->getOffset($dt) / 3600.0;
+
+    // 4) Get coords
     $lat = $userLocation->getLat();
     $lng = $userLocation->getLng();
 
-    // 4) Compute
-    return $this->getPrayerTimes($timestampday, $lat, $lng, $offsetHours);
+    // 5) Call the Y-M-D variant to avoid the getdate() trap
+    return $this->getDatePrayerTimes($year, $month, $day, $lat, $lng, $offsetHours);
 }
+
 
 
     // Calculation Methods
