@@ -36,47 +36,82 @@ class PrayTimesService
         return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday);
     }
 
-    public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
-    {
-        $praysN = [];
-        $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy([
-            'user' => $currentUser
-        ]);
-        if(!is_null($prayNotification)) {
-            $praysN = $prayNotification->getPrays();
-        }
-        $date = new \DateTime('now');
-        $date->setTimestamp($timestampday);
-        $praytimesUI = [];
-        foreach ($praytimes as $index => $praytime) {
-            if($index != 5 && $index != 1) { //remove sunset horaire en trop
-                if($index == 6) {
-                    $index = 5;
-                }
-                $datestring = $date->format('Ymd')." ".$praytime;
-                $prayDate = \DateTime::createFromFormat('Ymd H:i', $datestring);
-                $praytimesUI[] = [
-                    'time' => $praytime,
-                    'timestamp' => $prayDate->getTimestamp(),
-                    'label' => self::prays[$index]['label'],
-                    'key' => self::prays[$index]['key'],
-                    'isNotified' => in_array(self::prays[$index]['key'], $praysN)
-                ];
-            }
-        }
-        return $praytimesUI;
+   public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
+{
+    // Notifications activées par l'utilisateur
+    $praysN = [];
+    $pn = $this->entityManager
+        ->getRepository(PrayNotification::class)
+        ->findOneBy(['user' => $currentUser]);
+    if ($pn) {
+        $praysN = $pn->getPrays() ?? [];
     }
 
-    public function getUserPrayTimes($userLocation, $timestampday) {
-        $this->setCalcMethod(6); //UOFI
-        $timezone = new \DateTimeZone('Europe/Paris');
-        $dateTime = new \DateTime('now', $timezone);
-        $offset = timezone_offset_get($timezone, $dateTime);
-        $timezone = intval($offset / 3600); //The difference to (GMT)  time in hour
-        $lat = $userLocation->getLat();
-        $lng = $userLocation->getLng();
-        return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
+    // ✅ UTC+2 fixe (Etc/GMT-2 : signe inversé => UTC+2)
+    $tz = new \DateTimeZone('Etc/GMT-2');
+    $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+
+    // Index renvoyés par computeDayTimes():
+    // 0=Fajr, 1=Sunrise(Chorouq), 2=Dhuhr, 3=Asr, 4=Sunset, 5=Maghrib, 6=Isha
+    // On enlève uniquement Sunset (4) et on garde Chorouq (1).
+    $keep = [0, 1, 2, 3, 5, 6];
+
+    // Mapping vers tes labels/keys (self::prays):
+    // 0=>fajr, 1=>chorouq, 2=>dohr, 3=>asr, 4=>maghreb, 5=>icha
+    $map = [
+        0 => 0, // Fajr   -> fajr
+        1 => 1, // Sunrise-> chorouq
+        2 => 2, // Dhuhr  -> dohr
+        3 => 3, // Asr    -> asr
+        5 => 4, // Maghrib-> maghreb
+        6 => 5, // Isha   -> icha
+    ];
+
+    $praytimesUI = [];
+    foreach ($praytimes as $index => $timeStr) {
+        if (!in_array($index, $keep, true)) {
+            continue;
+        }
+
+        // Construire le timestamp dans le même TZ
+        $datestring = $date->format('Ymd') . ' ' . $timeStr;
+        $prayDate = \DateTimeImmutable::createFromFormat('Ymd H:i', $datestring, $tz);
+        if (!$prayDate) {
+            continue;
+        }
+
+        $target = $map[$index];
+
+        $praytimesUI[] = [
+            'time'       => $timeStr,
+            'timestamp'  => $prayDate->getTimestamp(),
+            'label'      => self::prays[$target]['label'],
+            'key'        => self::prays[$target]['key'],
+            'isNotified' => in_array(self::prays[$target]['key'], $praysN, true),
+        ];
     }
+
+    return $praytimesUI;
+}
+
+
+public function getUserPrayTimes($userLocation, $timestampday) {
+    $this->setCalcMethod(6); // UOIF 12°
+
+    // ✅ UTC+2 fixe : "Etc/GMT-2" (dans Etc/*, le signe est inversé: GMT-2 = UTC+2)
+    $tz = new \DateTimeZone('Etc/GMT-2');
+
+    // Offset pour le jour demandé (ça renverra toujours 7200s avec un tz fixe)
+    $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+    $offsetSeconds = $tz->getOffset($day);   // = 7200
+    $timezone = $offsetSeconds / 3600.0;     // = 2.0
+
+    $lat = $userLocation->getLat();
+    $lng = $userLocation->getLng();
+
+    return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
+}
+
 
     // Calculation Methods
     var $Jafari     = 0;    // Ithna Ashari
