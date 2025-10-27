@@ -10,12 +10,20 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use App\Entity\NotifToSend;
-
+use App\Services\FcmNotificationService;
 
 
 
 class NotifController extends AbstractController
 {
+
+     private $fcmNotificationService;
+      public function __construct(
+       
+        FcmNotificationService $fcmNotificationService
+    ) {
+        $this->fcmNotificationService = $fcmNotificationService;
+    }
     #[Route('/notif/{id}/respond', name: 'notif_respond', methods: ['POST'])]
 public function respondNotif(
     Request $request,
@@ -99,7 +107,7 @@ public function respondNotif(
         $newnotif->setTitle('Tranche Refusée');
         $newnotif->setMessage('La tranche de montant '.$tranche->getAmount().' a été refusée par '.$currentUser->getFirstName().' '.$currentUser->getLastName().'.');
     }
-      
+        $this->fcmNotificationService->sendFcmDefaultNotification($newnotif->getUser(), $newnotif->getTitle(), $newnotif->getMessage(),null);
     $em->flush();
 
     return $this->json([
