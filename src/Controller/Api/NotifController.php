@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
+use App\Entity\NotifToSend;
 
 
 
@@ -24,6 +25,7 @@ public function respondNotif(
     int $id
 ): JsonResponse {
     $notif = $notifRepo->find($id);
+    $currentUser = $this->getUser();
 
     if (!$notif) {
         return $this->json(['error' => 'Notification not found'], 404);
@@ -69,7 +71,34 @@ public function respondNotif(
          $tranche = $trancheRepo->find($trancheId);
           $tranche->setStatus('refusée');
     }
+     $newnotif = new NotifToSend();
+       
+       $newnotif->setDatas(json_encode([
+           'trancheId' => $tranche->getId(),
+           'status' => $tranche->getStatus()
+       ]));
+       $newnotif->setSendAt(new \DateTime());
+       $newnotif->setType('tranche');
+       $newnotif->setView('tranche');
 
+        $notif->setStatus('pending');
+    if($currentUser->getId() === $obligation->getCreatedBy()->getId()){
+        $newnotif->setUser($obligation->getRelatedTo());
+
+
+      
+    }else{
+        $newnotif->setUser($obligation->getCreatedBy());
+    }
+
+    if($tranche->getStatus() === 'validée'){
+        $newnotif->setTitle('Tranche Acceptée');
+        $newnotif->setMessage('La tranche de montant '.$tranche->getAmount().' a été acceptée par '.$currentUser->getFirstName().' '.$currentUser->getLastName().'.');
+    }else{
+        $newnotif->setTitle('Tranche Refusée');
+        $newnotif->setMessage('La tranche de montant '.$tranche->getAmount().' a été refusée par '.$currentUser->getFirstName().' '.$currentUser->getLastName().'.');
+    }
+      
     $em->flush();
 
     return $this->json([
