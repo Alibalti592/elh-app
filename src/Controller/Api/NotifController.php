@@ -70,6 +70,7 @@ public function respondNotif(
          $trancheId = $notifData['trancheId'] ?? null;
          $tranche = $trancheRepo->find($trancheId);
           $tranche->setStatus('refusée');
+          
     }
      $newnotif = new NotifToSend();
        
@@ -81,7 +82,7 @@ public function respondNotif(
        $newnotif->setType('tranche');
        $newnotif->setView('tranche');
 
-        $notif->setStatus('pending');
+        $newnotif->setStatus('pending');
     if($currentUser->getId() === $obligation->getCreatedBy()->getId()){
         $newnotif->setUser($obligation->getRelatedTo());
 
