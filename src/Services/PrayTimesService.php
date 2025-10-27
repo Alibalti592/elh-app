@@ -36,73 +36,47 @@ class PrayTimesService
         return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday);
     }
 
-public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
-{
-    $praysN = [];
-    $prayNotification = $this->entityManager
-        ->getRepository(PrayNotification::class)
-        ->findOneBy(['user' => $currentUser]);
-    if ($prayNotification) {
-        $praysN = $prayNotification->getPrays();
+    public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
+    {
+        $praysN = [];
+        $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy([
+            'user' => $currentUser
+        ]);
+        if(!is_null($prayNotification)) {
+            $praysN = $prayNotification->getPrays();
+        }
+        $date = new \DateTime('now');
+        $date->setTimestamp($timestampday);
+        $praytimesUI = [];
+        foreach ($praytimes as $index => $praytime) {
+            if($index != 5 && $index != 1) { //remove sunset horaire en trop
+                if($index == 6) {
+                    $index = 5;
+                }
+                $datestring = $date->format('Ymd')." ".$praytime;
+                $prayDate = \DateTime::createFromFormat('Ymd H:i', $datestring);
+                $praytimesUI[] = [
+                    'time' => $praytime,
+                    'timestamp' => $prayDate->getTimestamp(),
+                    'label' => self::prays[$index]['label'],
+                    'key' => self::prays[$index]['key'],
+                    'isNotified' => in_array(self::prays[$index]['key'], $praysN)
+                ];
+            }
+        }
+        return $praytimesUI;
     }
 
- 
-    $tz = new \DateTimeZone('Europe/Paris'); // ou 'Africa/Tunis'
-    $date = (new \DateTimeImmutable('@'.$timestampday))->setTimezone($tz);
-
-    $praytimesUI = [];
-    foreach ($praytimes as $index => $praytime) {
-       
-        if ($index === 1 || $index === 4) continue;
-
-     
-        $datestring = $date->format('Ymd').' '.$praytime;
-        $prayDate = \DateTimeImmutable::createFromFormat('Ymd H:i', $datestring, $tz);
-
-        $labels = self::prays; 
-        $map = [
-            0 => 0, // Fajr
-            2 => 2, // Dhuhr
-            3 => 3, // Asr
-            5 => 4, // Maghrib
-            6 => 5, // Isha
-        ];
-
-        if (!array_key_exists($index, $map) || !$prayDate) continue;
-        $target = $map[$index];
-
-        $praytimesUI[] = [
-            'time'       => $praytime,
-            'timestamp'  => $prayDate->getTimestamp(),
-            'label'      => self::prays[$target]['label'],
-            'key'        => self::prays[$target]['key'],
-            'isNotified' => in_array(self::prays[$target]['key'], $praysN, true),
-        ];
+    public function getUserPrayTimes($userLocation, $timestampday) {
+        $this->setCalcMethod(6); //UOFI
+        $timezone = new \DateTimeZone('Europe/Paris');
+        $dateTime = new \DateTime('now', $timezone);
+        $offset = timezone_offset_get($timezone, $dateTime);
+        $timezone = intval($offset / 3600); //The difference to (GMT)  time in hour
+        $lat = $userLocation->getLat();
+        $lng = $userLocation->getLng();
+        return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
     }
-    return $praytimesUI;
-}
-
-
-public function getUserPrayTimes($userLocation, $timestampday) {
-    $this->setCalcMethod(6); // UOIF ~ 12°
-
-    // 👉 ICI: utiliser explicitement le TZ voulu côté serveur (sans front)
-    $tz = new \DateTimeZone('Europe/Paris'); // ou 'Africa/Tunis' si tes users sont en Tunisie
-
-    // Offset EXACT pour le jour demandé (prend en compte été/hiver)
-    $day = (new \DateTimeImmutable('@'.$timestampday))->setTimezone($tz);
-    $offsetSeconds = $tz->getOffset($day);
-    $timezoneHours = $offsetSeconds / 3600.0; // ne pas faire intval()
-
-    return $this->getPrayerTimes(
-        $timestampday,
-        $userLocation->getLat(),
-        $userLocation->getLng(),
-        $timezoneHours
-    );
-}
-
-
 
     // Calculation Methods
     var $Jafari     = 0;    // Ithna Ashari
