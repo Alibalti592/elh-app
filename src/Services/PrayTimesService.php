@@ -37,46 +37,58 @@ class PrayTimesService
     }
 
     public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
-    {
-        $praysN = [];
-        $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy([
-            'user' => $currentUser
-        ]);
-        if(!is_null($prayNotification)) {
-            $praysN = $prayNotification->getPrays();
-        }
-        $date = new \DateTime('now');
-        $date->setTimestamp($timestampday);
-        $praytimesUI = [];
-        foreach ($praytimes as $index => $praytime) {
-            if($index != 5 && $index != 1) { //remove sunset horaire en trop
-                if($index == 6) {
-                    $index = 5;
-                }
-                $datestring = $date->format('Ymd')." ".$praytime;
-                $prayDate = \DateTime::createFromFormat('Ymd H:i', $datestring);
-                $praytimesUI[] = [
-                    'time' => $praytime,
-                    'timestamp' => $prayDate->getTimestamp(),
-                    'label' => self::prays[$index]['label'],
-                    'key' => self::prays[$index]['key'],
-                    'isNotified' => in_array(self::prays[$index]['key'], $praysN)
-                ];
-            }
-        }
-        return $praytimesUI;
+{
+    $praysN = [];
+    $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy(['user' => $currentUser]);
+    if (!is_null($prayNotification)) {
+        $praysN = $prayNotification->getPrays();
     }
 
-    public function getUserPrayTimes($userLocation, $timestampday) {
-        $this->setCalcMethod(6); //UOFI
-        $timezone = new \DateTimeZone('Europe/Paris');
-        $dateTime = new \DateTime('now', $timezone);
-        $offset = timezone_offset_get($timezone, $dateTime);
-        $timezone = intval($offset / 3600); //The difference to (GMT)  time in hour
-        $lat = $userLocation->getLat();
-        $lng = $userLocation->getLng();
-        return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
+    // ⚠️ Utiliser TZ explicite + le jour demandé (DST-safe)
+    $tz = new \DateTimeZone('Europe/Paris'); // ou mieux: fuseau de l'utilisateur
+    $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+
+    $praytimesUI = [];
+    foreach ($praytimes as $index => $praytime) {
+        if ($index != 5 && $index != 1) { // skip Sunset index=5 et Sunrise index=1
+            if ($index == 6) { $index = 5; } // map Isha sur ton tableau custom
+
+            $datestring = $date->format('Ymd') . ' ' . $praytime;
+            $prayDate = \DateTimeImmutable::createFromFormat('Ymd H:i', $datestring, $tz);
+
+            // En cas d'échec (rare), fallback
+            if (!$prayDate) {
+                $prayDate = \DateTimeImmutable::createFromFormat('Ymd H:i', $datestring, new \DateTimeZone(date_default_timezone_get()));
+            }
+
+            $praytimesUI[] = [
+                'time'       => $praytime,
+                'timestamp'  => $prayDate->getTimestamp(),
+                'label'      => self::prays[$index]['label'],
+                'key'        => self::prays[$index]['key'],
+                'isNotified' => in_array(self::prays[$index]['key'], $praysN),
+            ];
+        }
     }
+    return $praytimesUI;
+}
+
+
+  public function getUserPrayTimes($userLocation, $timestampday) {
+    $this->setCalcMethod(6); // UOIF 12°
+
+    // ⚠️ Prendre l'offset du fuseau pour LE JOUR demandé (DST-safe)
+    $tz = new \DateTimeZone('Europe/Paris'); // ou mieux: fuseau de l'utilisateur
+    $dayAtMidnight = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+    $offsetSeconds = $tz->getOffset($dayAtMidnight);
+    $timezone = $offsetSeconds / 3600; // flot, pas intval (gère +5:30, etc.)
+
+    $lat = $userLocation->getLat();
+    $lng = $userLocation->getLng();
+
+    return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
+}
+
 
     // Calculation Methods
     var $Jafari     = 0;    // Ithna Ashari
