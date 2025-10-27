@@ -16,10 +16,10 @@ use App\Services\FcmNotificationService;
 
 class NotifController extends AbstractController
 {
-
-     public function __construct(
-        private readonly FcmNotificationService $fcmNotificationService
-    ) {}
+ private $fcmNotificationService;
+    public function __construct( FcmNotificationService $fcmNotificationService) {
+         $this->fcmNotificationService = $fcmNotificationService;
+    }
     #[Route('/notif/{id}/respond', name: 'notif_respond', methods: ['POST'])]
 public function respondNotif(
     Request $request,
