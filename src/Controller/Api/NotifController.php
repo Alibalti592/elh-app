@@ -17,19 +17,14 @@ use App\Services\FcmNotificationService;
 class NotifController extends AbstractController
 {
 
-     private $fcmNotificationService;
-      public function __construct(
-       
-        FcmNotificationService $fcmNotificationService
-    ) {
-        $this->fcmNotificationService = $fcmNotificationService;
-    }
+    
     #[Route('/notif/{id}/respond', name: 'notif_respond', methods: ['POST'])]
 public function respondNotif(
     Request $request,
     NotifToSendRepository $notifRepo,
     EntityManagerInterface $em,
     \App\Repository\TrancheRepository $trancheRepo, // inject the tranche repo
+     FcmNotificationService $fcmNotificationService,
     int $id
 ): JsonResponse {
     $notif = $notifRepo->find($id);
