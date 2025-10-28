@@ -148,7 +148,7 @@ public function loadDettes(Request $request): Response
                 // Initialize Firebase Storage
                 $storage = (new Factory())
                     ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
-                    ->withDefaultStorageBucket('mc-connect-5bd22') // bucket name only
+                    ->withDefaultStorageBucket('elhapp-78deb.firebasestorage.app') // bucket name only
                     ->createStorage();
 
                 $bucket = $storage->getBucket();
