@@ -97,7 +97,7 @@ public function create(Request $request): JsonResponse
            
             $storage = (new Factory())
                 ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
-                ->withDefaultStorageBucket('mc-connect-5bd22')
+                ->withDefaultStorageBucket('elhapp-78deb.firebasestorage.app')
                 ->createStorage();
 
             $bucket = $storage->getBucket();
@@ -402,7 +402,7 @@ public function update(Request $request, int $id): JsonResponse
         try {
             $storage = (new Factory())
                 ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
-                ->withDefaultStorageBucket('mc-connect-5bd22')
+                ->withDefaultStorageBucket('elhapp-78deb.firebasestorage.app')
                 ->createStorage();
 
             $bucket = $storage->getBucket();
