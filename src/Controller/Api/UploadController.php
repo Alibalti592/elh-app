@@ -26,7 +26,7 @@ class UploadController extends AbstractController
             // Initialize Firebase Storage
             $storage = (new Factory())
                 ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
-                ->withDefaultStorageBucket('mc-connect-5bd22') // only the bucket name
+                ->withDefaultStorageBucket('elhapp-78deb.firebasestorage.app') // only the bucket name
                 ->createStorage();
 
             $bucket = $storage->getBucket();

@@ -14,7 +14,7 @@ class FcmNotificationService {
     private $fcmTokenRepository;
     private $userUI;
     private $firebaseFcmk;
-    const PROJECT_ID = "mc-connect-5bd22";
+    const PROJECT_ID = "elhapp-78deb";
 
     public function __construct($kernelProjectDir, FcmTokenRepository $fcmTokenRepository, UserUI $userUI, String $firebaseFcmk) {
         $this->fcmTokenRepository = $fcmTokenRepository;
