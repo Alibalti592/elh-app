@@ -10,104 +10,135 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 use App\Entity\NotifToSend;
-
+use App\Services\FcmNotificationService;
 
 
 
 class NotifController extends AbstractController
 {
+     public function __construct(private FcmNotificationService $fcmNotificationService)
+    {}
     #[Route('/notif/{id}/respond', name: 'notif_respond', methods: ['POST'])]
 public function respondNotif(
     Request $request,
     NotifToSendRepository $notifRepo,
     EntityManagerInterface $em,
-    \App\Repository\TrancheRepository $trancheRepo, // inject the tranche repo
+    \App\Repository\TrancheRepository $trancheRepo,
     int $id
 ): JsonResponse {
     $notif = $notifRepo->find($id);
     $currentUser = $this->getUser();
 
+    if (!$currentUser) {
+        return $this->json(['error' => 'Utilisateur non authentifié'], 401);
+    }
+
     if (!$notif) {
         return $this->json(['error' => 'Notification not found'], 404);
     }
 
-    $data = json_decode($request->getContent(), true);
+    $data = json_decode($request->getContent(), true) ?? [];
     $action = $data['action'] ?? null;
 
-    if (!in_array($action, ['accept', 'decline'])) {
+    if (!in_array($action, ['accept', 'decline'], true)) {
         return $this->json(['error' => 'Invalid action'], 400);
     }
 
+    // Always decode notif datas once
+    $notifData = json_decode($notif->getDatas() ?? '[]', true) ?: [];
+    $trancheId = $notifData['trancheId'] ?? null;
+
+    $tranche = $trancheId ? $trancheRepo->find((int)$trancheId) : null;
+    if (!$tranche) {
+        return $this->json(['error' => 'Tranche introuvable'], 404);
+    }
+
+    $obligation = $tranche->getObligation();
+
     $notif->setStatus($action);
 
+    $newRemaining = null;
+
     if ($action === 'accept') {
-        // decode datas to get trancheId
-        $notifData = json_decode($notif->getDatas(), true);
-        $trancheId = $notifData['trancheId'] ?? null;
+        $tranche->setStatus('validée');
 
-        if ($trancheId) {
-            $tranche = $trancheRepo->find($trancheId);
-            if ($tranche) {
-                $tranche->setStatus('validée');
-
-                $obligation = $tranche->getObligation();
-                $newRemaining = max(0, $obligation->getRemainingAmount() - $tranche->getAmount());
-                if($tranche->getAmount() > $obligation->getRemainingAmount()){
-                     $notif->setStatus('decline');
-                    $tranche->setStatus('refusée');
-                    $em->flush();
-                    return $this->json(['error' => 'Montant de la tranche supérieur au montant restant de l\'obligation'], 400);
-                }
-                if ($obligation) {
-                    $obligation->setRemainingAmount($newRemaining);
-                    if($newRemaining == 0){
-                        $obligation->setStatus('refund');
-                    }
-                }
-            }
+        if (!$obligation) {
+            return $this->json(['error' => 'Obligation introuvable pour la tranche'], 400);
         }
-    }else{
-         $trancheId = $notifData['trancheId'] ?? null;
-         $tranche = $trancheRepo->find($trancheId);
-          $tranche->setStatus('refusée');
-          
-    }
-     $newnotif = new NotifToSend();
-       
-       $newnotif->setDatas(json_encode([
-           'trancheId' => $tranche->getId(),
-           'status' => $tranche->getStatus()
-       ]));
-       $newnotif->setSendAt(new \DateTime());
-       $newnotif->setType('tranche');
-       $newnotif->setView('tranche');
 
-        $newnotif->setStatus('pending');
-    if($currentUser->getId() === $obligation->getCreatedBy()->getId()){
-        $newnotif->setUser($obligation->getRelatedTo());
+        if ($tranche->getAmount() > $obligation->getRemainingAmount()) {
+            // rollback this accept → decline
+            $notif->setStatus('decline');
+            $tranche->setStatus('refusée');
+            $em->flush();
+            return $this->json([
+                'error' => 'Montant de la tranche supérieur au montant restant de l\'obligation'
+            ], 400);
+        }
 
-
-      
-    }else{
-        $newnotif->setUser($obligation->getCreatedBy());
+        $newRemaining = max(0, $obligation->getRemainingAmount() - $tranche->getAmount());
+        $obligation->setRemainingAmount($newRemaining);
+        if ($newRemaining === 0) {
+            $obligation->setStatus('refund');
+        }
+    } else {
+        // decline
+        $tranche->setStatus('refusée');
     }
 
-    if($tranche->getStatus() === 'validée'){
-        $newnotif->setTitle('Tranche Acceptée');
-        $newnotif->setMessage('La tranche de montant '.$tranche->getAmount().' a été acceptée par '.$currentUser->getFirstName().' '.$currentUser->getLastName().'.');
-    }else{
-        $newnotif->setTitle('Tranche Refusée');
-        $newnotif->setMessage('La tranche de montant '.$tranche->getAmount().' a été refusée par '.$currentUser->getFirstName().' '.$currentUser->getLastName().'.');
+    // Build & persist a new notification to the counter-party
+    $newnotif = new NotifToSend();
+    $newnotif->setSendAt(new \DateTime());
+    $newnotif->setType('tranche');
+    $newnotif->setView('tranche');
+    $newnotif->setStatus('pending');
+
+    // Who to notify?
+    $sendToUser = null;
+    if ($obligation) {
+        if ($currentUser->getId() === $obligation->getCreatedBy()->getId()) {
+            $sendToUser = $obligation->getRelatedTo();
+        } else {
+            $sendToUser = $obligation->getCreatedBy();
+        }
     }
-      
+
+    if ($sendToUser) {
+        if ($tranche->getStatus() === 'validée') {
+            $newnotif->setTitle('Tranche Acceptée');
+            $newnotif->setMessage(
+                'La tranche de montant ' . $tranche->getAmount() .
+                ' a été acceptée par ' . $currentUser->getFirstName() . ' ' . $currentUser->getLastName() . '.'
+            );
+        } else {
+            $newnotif->setTitle('Tranche Refusée');
+            $newnotif->setMessage(
+                'La tranche de montant ' . $tranche->getAmount() .
+                ' a été refusée par ' . $currentUser->getFirstName() . ' ' . $currentUser->getLastName() . '.'
+            );
+        }
+
+        $newnotif->setUser($sendToUser);
+        $em->persist($newnotif); // <-- persist the new notification entity
+
+        // Fire FCM (safe if service is wired, see section 2)
+        $this->fcmNotificationService->sendFcmDefaultNotification(
+            $sendToUser,
+            $newnotif->getTitle(),
+            $newnotif->getMessage(),
+            null
+        );
+    }
+
     $em->flush();
 
     return $this->json([
         'success' => true,
         'status' => $notif->getStatus(),
-        'newRenaingAmount' => isset($newRemaining) ? $newRemaining : null,
+        'newRemainingAmount' => $newRemaining,
     ]);
 }
+
 
 
     // New route to fetch all notifications
