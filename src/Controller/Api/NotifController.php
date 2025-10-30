@@ -74,6 +74,8 @@ class NotifController extends AbstractController
 
                 return $this->json([
                     'error' => 'Montant de la tranche supérieur au montant restant de l\'obligation',
+                    'remainingAmount' => $obligation->getRemainingAmount(),
+                    'trancheAmount'  => $tranche->getAmount(),
                 ], 400);
             }
 
