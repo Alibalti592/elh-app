@@ -103,19 +103,22 @@ class NotifController extends AbstractController
 
         if ($sendToUser) {
             if ($tranche->getStatus() === 'validée') {
-                $newnotif->setTitle('Tranche Acceptée');
+                $newnotif->setTitle('Versement Accepté');
                 $newnotif->setMessage(
-                    'La tranche de montant ' . $tranche->getAmount() .
-                    ' a été acceptée par ' . ($currentUser->getFirstName() ?? '') . ' ' . ($currentUser->getLastName() ?? '') . '.'
+                    'Le versement de montant ' . $tranche->getAmount() .
+                    ' a été accepté par ' . ($currentUser->getFirstName() ?? '') . ' ' . ($currentUser->getLastName() ?? '') . '.'
                 );
             } else {
-                $newnotif->setTitle('Tranche Refusée');
+                $newnotif->setTitle('Versement Refusé');
                 $newnotif->setMessage(
-                    'La tranche de montant ' . $tranche->getAmount() .
-                    ' a été refusée par ' . ($currentUser->getFirstName() ?? '') . ' ' . ($currentUser->getLastName() ?? '') . '.'
+                    'Le versement de montant ' . $tranche->getAmount() .
+                    ' a été refusé par ' . ($currentUser->getFirstName() ?? '') . ' ' . ($currentUser->getLastName() ?? '') . '.'
                 );
             }
-
+            $newnotif->setDatas(json_encode([
+                'trancheId' => $tranche->getId(),
+                'status'    => $tranche->getStatus()
+            ], JSON_UNESCAPED_UNICODE));
             $newnotif->setUser($sendToUser);
             $em->persist($newnotif);
 
