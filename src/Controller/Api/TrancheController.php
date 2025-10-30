@@ -201,13 +201,19 @@ if ($relatedToEntity) {
          $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été ajouté');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
-        
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status'    => 'accept',
+        ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
     }else{
          $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été proposé');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
-        
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'actions'   => ['accept', 'decline'],
+        ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
     }
    }else{
@@ -216,13 +222,19 @@ if ($relatedToEntity) {
          $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été ajouté');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
-       
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status'    => 'accept',
+        ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
     }else{
          $notif->setUser($sendToUser); // <-- ENTITY, not ID
         $notif->setTitle('Un nouveau versement a été proposé');
         $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
-        
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'actions'   => ['accept', 'decline'],
+        ], JSON_UNESCAPED_UNICODE));
         $notif->setStatus('pending');
     }
    }
@@ -294,7 +306,21 @@ if ($relatedToEntity) {
 
         $this->entityManager->flush();
 
-   
+        // ---- Notification au créateur ----
+//         $notif = new NotifToSend();
+// $notif->setUser($tranche->getObligation()->getCreatedBy());
+//         $notif->setTitle("Réponse à un versement");
+//         $notif->setMessage($message);
+//         $notif->setDatas(json_encode([
+//             'trancheId' => $tranche->getId(),
+//             'status' => $tranche->getStatus()
+//         ]));
+//         $notif->setSendAt(new \DateTime());
+//         $notif->setType('tranche');
+//         $notif->setView("tranche");
+
+//         $this->entityManager->persist($notif);
+//         $this->entityManager->flush();
 
         return $this->json([
             'success' => true,
@@ -537,7 +563,10 @@ public function update(Request $request, int $id): JsonResponse
         $notif->setUser($sendToUser);
         $notif->setTitle("Mise à jour d'un versement");
         $notif->setMessage("Un versement lié à {$fromUser->getFirstName()} {$fromUser->getLastName()} a été mis à jour.");
-        
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status' => $tranche->getStatus()
+        ]));
         $notif->setStatus('pending');
         $notif->setSendAt(new \DateTime());
         $notif->setType('tranche');
@@ -616,7 +645,10 @@ public function delete(int $id): JsonResponse
         $notif->setUser($sendToUser);
         $notif->setTitle("Un versement a été supprimé");
         $notif->setMessage("Un versement a été supprimé par {$fromUser->getFirstName()} {$fromUser->getLastName()}.");
-       
+        $notif->setDatas(json_encode([
+            'trancheId' => $tranche->getId(),
+            'status' => $tranche->getStatus()
+        ]));
         $notif->setSendAt(new \DateTime());
         $notif->setType('tranche');
         $notif->setView('tranche');
