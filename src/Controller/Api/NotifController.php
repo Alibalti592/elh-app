@@ -168,6 +168,7 @@ class NotifController extends AbstractController
                 'title'  => $notif->getTitle(),
                 'message'=> $notif->getMessage(),
                 'type'   => $notif->getType(),
+                'datas'  => json_decode($notif->getDatas(), true),
                 'view'   => $notif->getView(),
                 'sendAt' => $sendAt ? $sendAt->format('Y-m-d H:i:s') : null,
                 'status' => $notif->getStatus(),
