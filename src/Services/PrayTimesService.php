@@ -54,13 +54,13 @@ class PrayTimesService
     // Index renvoyés par computeDayTimes():
     // 0=Fajr, 1=Sunrise(Chorouq), 2=Dhuhr, 3=Asr, 4=Sunset, 5=Maghrib, 6=Isha
     // On enlève uniquement Sunset (4) et on garde Chorouq (1).
-    $keep = [0, 1, 2, 3, 5, 6];
+    $keep = [0,  2, 3, 5, 6];
 
     // Mapping vers tes labels/keys (self::prays):
     // 0=>fajr, 1=>chorouq, 2=>dohr, 3=>asr, 4=>maghreb, 5=>icha
     $map = [
         0 => 0, // Fajr   -> fajr
-        1 => 1, // Sunrise-> chorouq
+      
         2 => 2, // Dhuhr  -> dohr
         3 => 3, // Asr    -> asr
         5 => 4, // Maghrib-> maghreb
