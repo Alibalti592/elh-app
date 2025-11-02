@@ -54,13 +54,13 @@ class PrayTimesService
     // Index renvoyés par computeDayTimes():
     // 0=Fajr, 1=Sunrise(Chorouq), 2=Dhuhr, 3=Asr, 4=Sunset, 5=Maghrib, 6=Isha
     // On enlève uniquement Sunset (4) et on garde Chorouq (1).
-    $keep = [0, 2, 3, 5, 6];
+    $keep = [0, 1, 2, 3, 5, 6];
 
     // Mapping vers tes labels/keys (self::prays):
     // 0=>fajr, 1=>chorouq, 2=>dohr, 3=>asr, 4=>maghreb, 5=>icha
     $map = [
         0 => 0, // Fajr   -> fajr
-      
+        1 => 1, // Sunrise-> chorouq
         2 => 2, // Dhuhr  -> dohr
         3 => 3, // Asr    -> asr
         5 => 4, // Maghrib-> maghreb
@@ -143,7 +143,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
     // Time Names
     var $timeNames = array(
         'Fajr',
-       
+        'Chorouq',
         'Dohr',
         'Asr',
         'Sunset',
@@ -425,14 +425,14 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         $t = $this->dayPortion($times);
 
         $Fajr    = $this->computeTime(180- $this->methodParams[$this->calcMethod][0], $t[0]);
-        //$Sunrise = $this->computeTime(180- 0.833, $t[1]);
+        $Sunrise = $this->computeTime(180- 0.833, $t[1]);
         $Dhuhr   = $this->computeMidDay($t[2]);
         $Asr     = $this->computeAsr(1+ $this->asrJuristic, $t[3]);
         $Sunset  = $this->computeTime(0.833, $t[4]);;
         $Maghrib = $this->computeTime($this->methodParams[$this->calcMethod][2], $t[5]);
         $Isha    = $this->computeTime($this->methodParams[$this->calcMethod][4], $t[6]);
 
-        return array($Fajr, $Dhuhr, $Asr, $Sunset, $Maghrib, $Isha);
+        return array($Fajr, $Sunrise, $Dhuhr, $Asr, $Sunset, $Maghrib, $Isha);
     }
 
 
