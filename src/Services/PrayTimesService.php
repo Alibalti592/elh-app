@@ -47,8 +47,8 @@ class PrayTimesService
         $praysN = $pn->getPrays() ?? [];
     }
 
-    // ✅ UTC+2 fixe (Etc/GMT-2 : signe inversé => UTC+2)
-    $tz = new \DateTimeZone('Etc/GMT-2');
+    // ✅ UTC+2 fixe (Etc/GMT-1 : signe inversé => UTC+2)
+    $tz = new \DateTimeZone('Etc/GMT-1');
     $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
 
     // Index renvoyés par computeDayTimes():
@@ -98,8 +98,8 @@ class PrayTimesService
 public function getUserPrayTimes($userLocation, $timestampday) {
     $this->setCalcMethod(6); // UOIF 12°
 
-    // ✅ UTC+2 fixe : "Etc/GMT-2" (dans Etc/*, le signe est inversé: GMT-2 = UTC+2)
-    $tz = new \DateTimeZone('Etc/GMT-2');
+    // ✅ UTC+2 fixe : "Etc/GMT-1" (dans Etc/*, le signe est inversé: GMT-1 = UTC+2)
+    $tz = new \DateTimeZone('Etc/GMT-1');
 
     // Offset pour le jour demandé (ça renverra toujours 7200s avec un tz fixe)
     $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
