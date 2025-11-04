@@ -19,7 +19,7 @@ class Obligation
     private ?int $id = null;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private string $remainingAmount;
+    private ?string $remainingAmount = null;
 
     #[ORM\Column(length: 3, nullable: true)]
     private ?string $currency = null;
@@ -79,11 +79,12 @@ class Obligation
     #[ORM\OneToMany(mappedBy: 'obligation', targetEntity: Tranche::class, cascade: ['persist', 'remove'])]
     private Collection $tranches;
 
-    public function __construct() {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->status = 'processing';
-        $this->tranches = new ArrayCollection();
-    }
+   public function __construct() {
+    $this->createdAt = new \DateTimeImmutable();
+    $this->status = 'processing';
+    $this->tranches = new ArrayCollection();
+    $this->remainingAmount = null; // let migration backfill set it correctly
+}
 
     // --- Getters / Setters ---
 
@@ -105,9 +106,16 @@ public function setFileUrl(?string $fileUrl): self
     $this->fileUrl = $fileUrl;
     return $this;
 }
-    public function getRemainingAmount(): float { return (float) $this->remainingAmount; }
-    public function setRemainingAmount(float $remainingAmount): self { $this->remainingAmount = (string) $remainingAmount; return $this; }
+    public function getRemainingAmount(): ?float
+{
+    return $this->remainingAmount !== null ? (float)$this->remainingAmount : null;
+}
 
+   public function setRemainingAmount(float $remainingAmount): self
+{
+    $this->remainingAmount = number_format($remainingAmount, 2, '.', '');
+    return $this;
+}
     public function getFirstname(): string { return $this->firstname ?? ""; }
     public function setFirstname(?string $firstname): static { $this->firstname = $firstname; return $this; }
 
