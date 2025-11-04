@@ -59,11 +59,13 @@ public function loadDettes(Request $request): Response
 
     foreach ($obligations as $obligation) {
         $obUI = $this->obligationUI->getObligation($obligation, true, $currentUser);
-
+$obUI['remainingAmount'] = $rawRemaining;                 // may be null
+$obUI['amount'] = (float)$obligation->getAmount(); 
         // Add uploaded file URL if exists
         $obUI['fileUrl'] = $obligation->getFileUrl() ?? null;
 
-        $amount = $obligation->getRemainingAmount() ?? $obligation->getAmount();
+        $rawRemaining = $obligation->getRemainingAmount(); // may be null
+$amount = $rawRemaining !== null ? $rawRemaining : (float)$obligation->getAmount();
         if ($filter == 'processing' || $filter == 'refund') {
             $totalAmount += floatval($amount);
         }
