@@ -38,7 +38,7 @@ class PrayTimesService
 
    public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
 {
-    // Notifications activées par l'utilisateur
+   
     $praysN = [];
     $pn = $this->entityManager
         ->getRepository(PrayNotification::class)
@@ -47,24 +47,21 @@ class PrayTimesService
         $praysN = $pn->getPrays() ?? [];
     }
 
-    // ✅ UTC+2 fixe (Etc/GMT-1 : signe inversé => UTC+2)
+   
     $tz = new \DateTimeZone('Etc/GMT-1');
     $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
 
-    // Index renvoyés par computeDayTimes():
-    // 0=Fajr, 1=Sunrise(Chorouq), 2=Dhuhr, 3=Asr, 4=Sunset, 5=Maghrib, 6=Isha
-    // On enlève uniquement Sunset (4) et on garde Chorouq (1).
+   
     $keep = [0,  2, 3, 5, 6];
 
-    // Mapping vers tes labels/keys (self::prays):
-    // 0=>fajr, 1=>chorouq, 2=>dohr, 3=>asr, 4=>maghreb, 5=>icha
+   
     $map = [
-        0 => 0, // Fajr   -> fajr
-      
-        2 => 2, // Dhuhr  -> dohr
-        3 => 3, // Asr    -> asr
-        5 => 4, // Maghrib-> maghreb
-        6 => 5, // Isha   -> icha
+        0 => 0,
+
+        2 => 2,
+        3 => 3,
+        5 => 4,
+        6 => 5,
     ];
 
     $praytimesUI = [];
@@ -73,7 +70,7 @@ class PrayTimesService
             continue;
         }
 
-        // Construire le timestamp dans le même TZ
+      
         $datestring = $date->format('Ymd') . ' ' . $timeStr;
         $prayDate = \DateTimeImmutable::createFromFormat('Ymd H:i', $datestring, $tz);
         if (!$prayDate) {
@@ -96,15 +93,15 @@ class PrayTimesService
 
 
 public function getUserPrayTimes($userLocation, $timestampday) {
-    $this->setCalcMethod(6); // UOIF 12°
+    $this->setCalcMethod(6); 
 
-    // ✅ UTC+2 fixe : "Etc/GMT-1" (dans Etc/*, le signe est inversé: GMT-1 = UTC+2)
+  
     $tz = new \DateTimeZone('Etc/GMT-1');
 
-    // Offset pour le jour demandé (ça renverra toujours 7200s avec un tz fixe)
+  
     $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
-    $offsetSeconds = $tz->getOffset($day);   // = 7200
-    $timezone = $offsetSeconds / 3600.0;     // = 2.0
+    $offsetSeconds = $tz->getOffset($day);  
+    $timezone = $offsetSeconds / 3600.0;   
 
     $lat = $userLocation->getLat();
     $lng = $userLocation->getLng();
@@ -113,34 +110,32 @@ public function getUserPrayTimes($userLocation, $timestampday) {
 }
 
 
-    // Calculation Methods
-    var $Jafari     = 0;    // Ithna Ashari
-    var $Karachi    = 1;    // University of Islamic Sciences, Karachi
-    var $ISNA       = 2;    // Islamic Society of North America (ISNA)
-    var $MWL        = 3;    // Muslim World League (MWL)
-    var $Makkah     = 4;    // Umm al-Qura, Makkah
-    var $Egypt      = 5;    // Egyptian General Authority of Survey
-    var $Custom     = 6;    // Custom Setting
-    var $Tehran     = 7;    // Institute of Geophysics, University of Tehran
+   
+    var $Jafari     = 0;   
+    var $Karachi    = 1;   
+    var $ISNA       = 2;   
+    var $MWL        = 3;   
+    var $Makkah     = 4;   
+    var $Egypt      = 5;   
+    var $Custom     = 6;   
+    var $Tehran     = 7;   
 
-    // Juristic Methods
-    var $Shafii     = 0;    // Shafii (standard)
-    var $Hanafi     = 1;    // Hanafi
+    var $Shafii     = 0;
+    var $Hanafi     = 1;
 
-    // Adjusting Methods for Higher Latitudes
-    var $None       = 0;    // No adjustment
-    var $MidNight   = 1;    // middle of night
-    var $OneSeventh = 2;    // 1/7th of night
-    var $AngleBased = 3;    // angle/60th of night
+    var $None       = 0;
+    var $MidNight   = 1;
+    var $OneSeventh = 2;    
+    var $AngleBased = 3;   
 
 
-    // Time Formats
-    var $Time24     = 0;    // 24-hour format
-    var $Time12     = 1;    // 12-hour format
-    var $Time12NS   = 2;    // 12-hour format with no suffix
-    var $Float      = 3;    // floating point number
 
-    // Time Names
+    var $Time24     = 0;
+    var $Time12     = 1;
+    var $Time12NS   = 2;
+    var $Float      = 3;
+
+   
     var $timeNames = array(
         'Fajr',
         'Chorouq',
@@ -151,47 +146,37 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         'Isha'
     );
 
-    var $InvalidTime = '-----';     // The string used for invalid times
+    var $InvalidTime = '-----';    
 
 
-    //---------------------- Global Variables --------------------
+  
 
 
-    var $calcMethod   = 0;        // caculation method
-    var $asrJuristic  = 0;        // Juristic method for Asr
-    var $dhuhrMinutes = 0;        // minutes after mid-day for Dhuhr
-    var $adjustHighLats = 1;    // adjusting method for higher latitudes
+    var $calcMethod   = 0;      
+    var $asrJuristic  = 0;      
+    var $dhuhrMinutes = 0;      
+    var $adjustHighLats = 1;  
 
-    var $timeFormat   = 0;        // time format
+    var $timeFormat   = 0;      
 
-    var $lat;        // latitude
-    var $lng;        // longitude
-    var $timeZone;   // time-zone
-    var $JDate;      // Julian date
-
-
-    //--------------------- Technical Settings --------------------
+    var $lat;       
+    var $lng;       
+    var $timeZone;  
+    var $JDate;    
 
 
-    var $numIterations = 1;        // number of iterations needed to compute times
+ 
 
 
-    //------------------- Calc Method Parameters --------------------
+    var $numIterations = 1;     
+
+
+ 
 
 
     var $methodParams = array();
 
-    /*  var $methodParams[methodNum] = array(fa, ms, mv, is, iv);
-
-            fa : fajr angle
-            ms : maghrib selector (0 = angle; 1 = minutes after sunset)
-            mv : maghrib parameter value (in angle or minutes)
-            is : isha selector (0 = angle; 1 = minutes after maghrib)
-            iv : isha parameter value (in angle or minutes)
-    */
-
-
-    //----------------------- Constructors -------------------------
+  
 
 
     function PrayTime($methodID = 0)
@@ -207,24 +192,16 @@ public function getUserPrayTimes($userLocation, $timestampday) {
 
         $this->methodParams[$this->Custom]    = array(12, 1, 0, 0, 12); //UOFI => 12°
 
-        // UOIF {
-        //        @Override
-        //        public void set(PrayTimes pt) {
-        //            pt.tuneImsak(12, 0);
-        //            pt.tuneFajr(12, 0);
-        //            pt.tuneIshaa(12, 0);
-        //        }
-        //    }
-
+        
         $this->setCalcMethod($methodID);
     }
 
 
 
-    //-------------------- Interface Functions --------------------
+  
 
 
-    // return prayer times for a given date
+  
     function getDatePrayerTimes($year, $month, $day, $latitude, $longitude, $timeZone)
     {
         $this->lat = $latitude;
@@ -234,7 +211,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         return $this->computeDayTimes();
     }
 
-    // return prayer times for a given timestamp
+   
     function getPrayerTimes($timestamp, $latitude, $longitude, $timeZone)
     {
         $date = @getdate($timestamp);
@@ -242,13 +219,13 @@ public function getUserPrayTimes($userLocation, $timestampday) {
             $latitude, $longitude, $timeZone);
     }
 
-    // set the calculation method
+  
     function setCalcMethod($methodID)
     {
         $this->calcMethod = $methodID;
     }
 
-    // set the juristic method for Asr
+ 
     function setAsrMethod($methodID)
     {
         if ($methodID < 0 || $methodID > 1)
@@ -256,43 +233,43 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         $this->asrJuristic = $methodID;
     }
 
-    // set the angle for calculating Fajr
+ 
     function setFajrAngle($angle)
     {
         $this->setCustomParams(array($angle, null, null, null, null));
     }
 
-    // set the angle for calculating Maghrib
+  
     function setMaghribAngle($angle)
     {
         $this->setCustomParams(array(null, 0, $angle, null, null));
     }
 
-    // set the angle for calculating Isha
+  
     function setIshaAngle($angle)
     {
         $this->setCustomParams(array(null, null, null, 0, $angle));
     }
 
-    // set the minutes after mid-day for calculating Dhuhr
+  
     function setDhuhrMinutes($minutes)
     {
         $this->dhuhrMinutes = $minutes;
     }
 
-    // set the minutes after Sunset for calculating Maghrib
+  
     function setMaghribMinutes($minutes)
     {
         $this->setCustomParams(array(null, 1, $minutes, null, null));
     }
 
-    // set the minutes after Maghrib for calculating Isha
+   
     function setIshaMinutes($minutes)
     {
         $this->setCustomParams(array(null, null, null, 1, $minutes));
     }
 
-    // set custom values for calculation parameters
+  
     function setCustomParams($params)
     {
         for ($i=0; $i<5; $i++)
@@ -305,7 +282,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         $this->calcMethod = $this->Custom;
     }
 
-    // set adjusting method for higher latitudes
+ 
     function setHighLatsMethod($methodID)
     {
         $this->adjustHighLats = $methodID;
@@ -317,12 +294,12 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         $this->timeFormat = $timeFormat;
     }
 
-    // convert float hours to 24h format
+  
     function floatToTime24($time)
     {
         if (is_nan($time))
             return $this->InvalidTime;
-        $time = $this->fixhour($time+ 0.5/ 60);  // add 0.5 minutes to round
+        $time = $this->fixhour($time+ 0.5/ 60); 
         $hours = floor($time);
         $minutes = floor(($time- $hours)* 60);
         return $this->twoDigitsFormat($hours). ':'. $this->twoDigitsFormat($minutes);
@@ -349,14 +326,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
 
 
 
-    //---------------------- Calculation Functions -----------------------
-
-    // References:
-    // http://www.ummah.net/astronomy/saltime
-    // http://aa.usno.navy.mil/faq/docs/SunApprox.html
-
-
-    // compute declination angle of sun and equation of time
+  
     function sunPosition($jd)
     {
         $D = $jd - 2451545.0;
@@ -538,7 +508,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
 
 
 
-    //---------------------- Misc Functions -----------------------
+  
 
 
     // compute the difference between two times
@@ -556,7 +526,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
 
 
 
-    //---------------------- Julian Date Functions -----------------------
+  
 
 
     // calculate julian date from a calendar date
