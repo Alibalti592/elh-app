@@ -63,38 +63,45 @@ public function getTranches(Request $request): JsonResponse
 #[Route('/create', name: 'tranche_create', methods: ['POST'])]
 public function create(Request $request): JsonResponse
 {
-   
     $currentUser = $this->getUser();
+
+    // ---------- 1) Parse payload (JSON or multipart "tranche" field) ----------
     $data = null;
     $trancheJson = $request->request->get('tranche');
     if (!empty($trancheJson)) {
-        $data = json_decode($trancheJson, true);
-        if (!is_array($data)) {
-            return $this->json(['error' => 'Invalid tranche JSON'], 400);
+        $tmp = json_decode($trancheJson, true);
+        if (is_array($tmp)) {
+            $data = $tmp;
         }
-    } else {
-        $raw = $request->getContent();
-        if (!empty($raw)) {
+    }
+    if (!$data) {
+        $raw = (string)$request->getContent();
+        if ($raw !== '') {
             $tmp = json_decode($raw, true);
             if (is_array($tmp)) {
                 $data = $tmp;
             }
         }
     }
-
     if (!is_array($data)) {
-        return $this->json(['error' => 'Missing payload'], 400);
+        return $this->json(['error' => 'Missing or invalid payload'], 400);
     }
 
-   
+    // ---------- 2) Basic validation ----------
+    if (empty($data['obligationId']) || empty($data['amount']) || empty($data['paidAt'])) {
+        return $this->json(['error' => 'Fields obligationId, amount, paidAt are required'], 400);
+    }
 
+    $obligation = $this->obligationRepository->find((int)$data['obligationId']);
+    if (!$obligation) {
+        return $this->json(['error' => 'Obligation introuvable'], 404);
+    }
 
-
-    /** @var \Symfony\Component\HttpFoundation\File\UploadedFile|null $uploadedFile */
+    // ---------- 3) Optional file upload (part name: "file") ----------
+    /** @var UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
     if ($uploadedFile) {
         try {
-           
             $storage = (new Factory())
                 ->withServiceAccount(\dirname(__DIR__, 3) . '/config/firebase_credentials.json')
                 ->withDefaultStorageBucket('elhapp-78deb.firebasestorage.app')
@@ -106,24 +113,19 @@ public function create(Request $request): JsonResponse
 
             $bucket->upload(
                 fopen($uploadedFile->getPathname(), 'r'),
-                [
-                    'name' => $fileName,
-                    // 'predefinedAcl' => 'publicRead',
-                ]
+                ['name' => $fileName]
             );
 
             $data['fileUrl'] = sprintf('https://storage.googleapis.com/%s/%s', $bucket->name(), $fileName);
-        } catch (\Kreait\Firebase\Exception\FirebaseException $e) {
-            return $this->json(['error' => 'Firebase error: ' . $e->getMessage()], 500);
         } catch (\Throwable $e) {
-            return $this->json(['error' => 'General error: ' . $e->getMessage()], 500);
+            // Do not fail request because of storage; just return 400 with reason
+            return $this->json(['error' => 'File upload failed: '.$e->getMessage()], 400);
         }
     }
-    $obligation = $this->obligationRepository->find((int)$data['obligationId']);
 
+    // ---------- 4) Create Tranche ----------
     $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
-       // <-- always from payload
     $tranche->setAmount((float)$data['amount']);
 
     try {
@@ -136,134 +138,122 @@ public function create(Request $request): JsonResponse
         $tranche->setFileUrl($data['fileUrl']);
     }
 
-    $type = $obligation->getType(); // 'jed', 'onm', etc.
-   
+    $type = (string)$obligation->getType(); // 'jed' / 'onm' / etc.
     $obligationCreator = $obligation->getCreatedBy();
-          $relatedToEntity = $obligation->getRelatedTo();
+    $relatedToEntity   = $obligation->getRelatedTo();
 
-if (!$relatedToEntity) {
-    $tranche->setStatus('validée');
-    $newRemaining = max(
-        0,
-        (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
-    );
-    $obligation->setRemainingAmount($newRemaining);
-    if($newRemaining <= 0) {
-        $obligation->setStatus('refund');
+    // set tranche status + update remainingAmount
+    if (!$relatedToEntity) {
+        $tranche->setStatus('validée');
+        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $obligation->setRemainingAmount($newRemaining);
+        if ($newRemaining <= 0) {
+            $obligation->setStatus('refund');
+        }
+    } elseif ($obligationCreator && $currentUser && $currentUser->getId() === $obligationCreator->getId() && $type === 'jed') {
+        $tranche->setStatus('validée');
+        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $obligation->setRemainingAmount($newRemaining);
+        if ($newRemaining <= 0) {
+            $obligation->setStatus('refund');
+        }
+    } elseif ($obligationCreator && $relatedToEntity && $currentUser && $currentUser->getId() === $relatedToEntity->getId() && $type === 'onm') {
+        $tranche->setStatus('validée');
+        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $obligation->setRemainingAmount($newRemaining);
+        if ($newRemaining <= 0) {
+            $obligation->setStatus('refund');
+        }
+    } else {
+        $tranche->setStatus('en attente');
     }
-} elseif ($obligationCreator && $currentUser->getId() === $obligationCreator->getId() && $type === 'jed') {
-    $tranche->setStatus('validée');
-    $newRemaining = max(
-        0,
-        (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
-    );
-    $obligation->setRemainingAmount($newRemaining);
-     if($newRemaining <= 0) {
-        $obligation->setStatus('refund');
-    }
-} elseif($obligationCreator && $currentUser->getId() === $relatedToEntity->getId() && $type === 'onm') {
-    $tranche->setStatus('validée');
-    $newRemaining = max(
-        0,
-        (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount()
-    );
-    $obligation->setRemainingAmount($newRemaining);
-     if($newRemaining <= 0) {
-        $obligation->setStatus('refund');
-    }
-
-} else {
-
-    $tranche->setStatus('en attente');
-}
 
     $this->entityManager->persist($tranche);
-    $this->entityManager->flush();
-  
-   // --- replace your whole "if ($relatedToEntity) { ... }" block with this ---
-if ($relatedToEntity) {
-    $notif = new NotifToSend();
+    $this->entityManager->flush(); // tranche persisted
 
-    // tiny helper (inline) to format names safely
-    $fullName = function (?User $u): string {
-        if (!$u) return 'Utilisateur';
-        $fn = method_exists($u, 'getFirstname') ? (string)$u->getFirstname() : '';
-        $ln = method_exists($u, 'getLastname') ? (string)$u->getLastname() : '';
-        $name = trim($fn . ' ' . $ln);
-        return $name !== '' ? $name : 'Utilisateur';
-    };
-    $sendToUser = null;
-    // CASE 1: Someone other than the creator proposes a tranche on 'jed' -> notify creator (PENDING)
+    // ---------- 5) Build Tranche-related notification (queued now) ----------
+    $notifId = null;
+    $warnings = [];
 
-   if($currentUser->getId() == $obligationCreator->getId()){
-    $sendToUser = $relatedToEntity;
-    if($type === 'jed'){
-         $notif->setUser($sendToUser); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été ajouté');
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'status'    => 'accept',
-        ], JSON_UNESCAPED_UNICODE));
-        $notif->setStatus('pending');
-    }else{
-         $notif->setUser($sendToUser); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été proposé');
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'actions'   => ['accept', 'decline'],
-        ], JSON_UNESCAPED_UNICODE));
-        $notif->setStatus('pending');
+    if ($relatedToEntity) {
+        // who to notify?
+        $sendToUser = null;
+        $title = '';
+        $message = '';
+        $payload = [];
+
+        $fullName = function (?User $u): string {
+            if (!$u) return 'Utilisateur';
+            $fn = method_exists($u, 'getFirstName') ? (string)$u->getFirstName() : (method_exists($u, 'getFirstname') ? (string)$u->getFirstname() : '');
+            $ln = method_exists($u, 'getLastName')  ? (string)$u->getLastName()  : (method_exists($u, 'getLastname')  ? (string)$u->getLastname()  : '');
+            $name = trim($fn.' '.$ln);
+            return $name !== '' ? $name : 'Utilisateur';
+        };
+
+        if ($obligationCreator && $currentUser && $currentUser->getId() === $obligationCreator->getId()) {
+            // creator is acting
+            $sendToUser = $relatedToEntity;
+            if ($type === 'jed') {
+                $title = 'Un nouveau versement a été ajouté';
+                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ a été ajouté par '.$fullName($currentUser).'.';
+                $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
+            } else {
+                $title = 'Un nouveau versement a été proposé';
+                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ vous est proposé par '.$fullName($currentUser).'.';
+                $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
+            }
+        } else {
+            // related user is acting
+            $sendToUser = $obligationCreator;
+            if ($type === 'onm') {
+                $title = 'Un nouveau versement a été ajouté';
+                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ a été ajouté par '.$fullName($currentUser).'.';
+                $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
+            } else {
+                $title = 'Un nouveau versement a été proposé';
+                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ vous est proposé par '.$fullName($currentUser).'.';
+                $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
+            }
+        }
+
+        if ($sendToUser) {
+            try {
+                $notif = new NotifToSend();
+                $notif->setUser($sendToUser);
+                $notif->setTitle($title);
+                $notif->setMessage($message);
+                $notif->setDatas(json_encode($payload, JSON_UNESCAPED_UNICODE));
+                $notif->setStatus('pending'); // or 'queued' if your worker picks that
+                $notif->setSendAt(new \DateTime());
+                $notif->setType('tranche');
+                $notif->setView('tranche');
+
+                $this->entityManager->persist($notif);
+                $this->entityManager->flush();
+                $notifId = $notif->getId();
+
+                // Try to send immediately, but NEVER fail the request if FCM throws
+             
+            } catch (\Throwable $e) {
+                $warnings[] = 'Notif creation failed';
+            }
+        }
     }
-   }else{
-    $sendToUser = $obligationCreator;
-    if($type === 'onm'){
-         $notif->setUser($sendToUser); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été ajouté');
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ a été ajouté par ' . $fullName($currentUser) . '.');
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'status'    => 'accept',
-        ], JSON_UNESCAPED_UNICODE));
-        $notif->setStatus('pending');
-    }else{
-         $notif->setUser($sendToUser); // <-- ENTITY, not ID
-        $notif->setTitle('Un nouveau versement a été proposé');
-        $notif->setMessage('Un nouveau versement d’un montant de ' . $tranche->getAmount() . '€ vous est proposé par ' . $fullName($currentUser) . '.');
-        $notif->setDatas(json_encode([
-            'trancheId' => $tranche->getId(),
-            'actions'   => ['accept', 'decline'],
-        ], JSON_UNESCAPED_UNICODE));
-        $notif->setStatus('pending');
-    }
-   }
 
-    
-
-    
-    $notif->setSendAt(new \DateTime());
-    $notif->setType('tranche');
-    $notif->setView('tranche');
-
-    $this->entityManager->persist($notif);
-    $this->entityManager->flush();
-     $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
-   
-}
-
-
+    // ---------- 6) Respond with scalars only (no entities) ----------
     return $this->json([
-        'success'                   => true,
-        'trancheId'                 => $tranche->getId(),
-        'status'                    => $tranche->getStatus(),
-        'remainingAmountObligation' => $obligation->getRemainingAmount(),
-        'fileUrl'                   => $tranche->getFileUrl(),
-        'relatedToId'              => $relatedToEntity ,
-        'creator'                  => $obligationCreator ,
-        'notif'                    => $notif
+        'success' => true,
+        'trancheId' => $tranche->getId(),
+        'status' => $tranche->getStatus(),
+        'remainingAmountObligation' => (float)$obligation->getRemainingAmount(),
+        'fileUrl' => $tranche->getFileUrl(),
+        'relatedToId' => $relatedToEntity?->getId(),
+        'creatorId' => $obligationCreator?->getId(),
+        'notifId' => $notifId,
+        'warnings' => $warnings ?: null,
     ], 201);
 }
+
 
     // -----------------------------
     // Réponse de l'emprunteur
