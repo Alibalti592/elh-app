@@ -9,74 +9,88 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+
 class AddPrayNotifCommand extends Command
 {
     protected static $defaultName = 'app:add-pray-notif';
 
-    private $entityManager;
-    public function __construct(EntityManagerInterface $entityManager, private readonly PrayTimesService $prayTimesService) {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly PrayTimesService $prayTimesService
+    ) {
         parent::__construct();
-        $this->entityManager = $entityManager;
     }
 
-    protected function configure() {
+    protected function execute(InputInterface $input, OutputInterface $output): int
+    {
+        $io = new SymfonyStyle($input, $output);
+        $io->section('app:add-pray-notif (stateless)');
 
-    }
+        // App timezone (you’ve standardized on Etc/GMT-1 = UTC+1)
+        $tz = new \DateTimeZone('Etc/GMT-1');
+        $now = new \DateTimeImmutable('now', $tz);
+        $startOfDay = new \DateTimeImmutable($now->format('Y-m-d') . ' 00:00:00', $tz);
 
-   // use SymfonyStyle for nice output
+        /** @var PrayNotification[] $all */
+        $all = $this->em->getRepository(PrayNotification::class)->findAll();
+        $io->writeln('Users with PrayNotification: ' . count($all));
 
-// ...
-protected function execute(InputInterface $input, OutputInterface $output) {
-    $io = new SymfonyStyle($input, $output);
-    $io->section('app:add-pray-notif (debug)');
+        $created = 0;
 
-    $prayNotifs = $this->entityManager->getRepository(PrayNotification::class)->findPrayNotifToAdd();
-    $io->writeln('Found PrayNotification to add: '.count($prayNotifs));
+        foreach ($all as $pn) {
+            $user = $pn->getUser();
 
-    foreach ($prayNotifs as $prayNotif) {
-        $prayNotif->setNotifAdded(true);
-        $this->entityManager->persist($prayNotif);
-    }
-    $this->entityManager->flush();
+            // 1) Delete TODAY + FUTURE queued 'pray' notifs for this user (stateless rebuild)
+            // If NotifToSend has a user relation and a DateTime field sendAt:
+            $this->em->createQuery(
+                'DELETE FROM App\Entity\NotifToSend n
+                 WHERE n.view = :view AND n.user = :user AND n.sendAt >= :start'
+            )->setParameters([
+                'view'  => 'pray',
+                'user'  => $user,
+                'start' => $startOfDay,
+            ])->execute();
 
-    $created = 0;
+            // 2) Recompute from PrayTimesService (already returns today’s times)
+            $ui = $this->prayTimesService->getPrayTimesOfDay($user);
 
-    foreach ($prayNotifs as $prayNotif) {
-        $currentUser = $prayNotif->getUser();
-        $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
+            $io->writeln(sprintf('User %d: %d candidate times', $user->getId(), count($ui)));
 
-        // remove existing
-        $toremoves = $this->entityManager->getRepository(NotifToSend::class)->findPrayNotifOfUser($currentUser);
-        foreach ($toremoves as $toremove) {
-            $this->entityManager->remove($toremove);
-        }
-        $this->entityManager->flush();
+            foreach ($ui as $row) {
+                // Only if the user enabled that prayer
+                if (empty($row['isNotified'])) {
+                    continue;
+                }
 
-        $io->writeln(sprintf('User %d: %d candidate times', $currentUser->getId(), count($praytimesUI)));
+                // Timestamp -> DateTime in our app TZ
+                $sendAt = (new \DateTimeImmutable('@' . $row['timestamp']))->setTimezone($tz);
 
-        foreach ($praytimesUI as $row) {
-            $sendAt = (new \DateTime())->setTimestamp($row['timestamp']);
-            $now = new \DateTime();
-            $io->writeln(sprintf(
-                ' - %s @ %s (ts=%d) isNotified=%s %s',
-                $row['key'], $sendAt->format('Y-m-d H:i:s T'), $row['timestamp'],
-                $row['isNotified'] ? 'yes' : 'no',
-                $sendAt > $now ? 'FUTURE' : 'PAST'
-            ));
+                $io->writeln(sprintf(
+                    ' - %s @ %s (ts=%d) isNotified=%s %s',
+                    $row['key'],
+                    $sendAt->format('Y-m-d H:i:s T'),
+                    $row['timestamp'],
+                    $row['isNotified'] ? 'yes' : 'no',
+                    $sendAt > $now ? 'FUTURE' : 'PAST'
+                ));
 
-            if ($row['isNotified'] && $sendAt > $now) {
-                $notifToSend = new NotifToSend();
-                $notifToSend->setView('pray');
-                $notifToSend->setForPrayFromUI($currentUser, $row);
-                $this->entityManager->persist($notifToSend);
+                // Queue only future items
+                if ($sendAt <= $now) {
+                    continue;
+                }
+
+                $n = new NotifToSend();
+                $n->setView('pray');
+                // setForPrayFromUI should set user, payload, sendAt, title/body…
+                $n->setForPrayFromUI($user, $row);
+                $this->em->persist($n);
                 $created++;
             }
+
+            $this->em->flush();
         }
-        $this->entityManager->flush();
+
+        $io->success("Created $created NotifToSend rows (stateless)");
+        return Command::SUCCESS;
     }
-
-    $io->success("Created $created NotifToSend rows");
-    return Command::SUCCESS;
-}
-
 }
