@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-
+use Symfony\Component\Console\Style\SymfonyStyle;
 class AddPrayNotifCommand extends Command
 {
     protected static $defaultName = 'app:add-pray-notif';
@@ -24,7 +24,7 @@ class AddPrayNotifCommand extends Command
     }
 
    // use SymfonyStyle for nice output
-use Symfony\Component\Console\Style\SymfonyStyle;
+
 // ...
 protected function execute(InputInterface $input, OutputInterface $output) {
     $io = new SymfonyStyle($input, $output);
