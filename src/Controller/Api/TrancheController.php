@@ -564,7 +564,7 @@ public function update(Request $request, int $id): JsonResponse
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
-         $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
+       
     }
 
     return $this->json([
@@ -646,7 +646,7 @@ public function delete(int $id): JsonResponse
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
-          $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $notif->getTitle(), $notif->getMessage(),null);
+         
     }
 
     return $this->json([

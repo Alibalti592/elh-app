@@ -123,17 +123,7 @@ class NotifController extends AbstractController
             $em->persist($newnotif);
 
             // Never let FCM throw a 500
-            try {
-                $this->fcmNotificationService->sendFcmDefaultNotification(
-                    $sendToUser,
-                    $newnotif->getTitle(),
-                    $newnotif->getMessage(),
-                    null
-                );
-            } catch (\Throwable $e) {
-                // log if you want, but don’t 500 the request
-                // $this->logger->warning('FCM send failed', ['e' => $e->getMessage()]);
-            }
+          
         }
 
         $em->flush();
