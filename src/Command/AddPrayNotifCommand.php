@@ -23,40 +23,60 @@ class AddPrayNotifCommand extends Command
 
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output) {
-        $prayNotifs = $this->entityManager->getRepository(PrayNotification::class)->findPrayNotifToAdd();
-        /** @var PrayNotification $prayNotif */
-        foreach ($prayNotifs as $prayNotif) {
-            $prayNotif->setNotifAdded(true);
-            $this->entityManager->persist($prayNotif);
+   // use SymfonyStyle for nice output
+use Symfony\Component\Console\Style\SymfonyStyle;
+// ...
+protected function execute(InputInterface $input, OutputInterface $output) {
+    $io = new SymfonyStyle($input, $output);
+    $io->section('app:add-pray-notif (debug)');
+
+    $prayNotifs = $this->entityManager->getRepository(PrayNotification::class)->findPrayNotifToAdd();
+    $io->writeln('Found PrayNotification to add: '.count($prayNotifs));
+
+    foreach ($prayNotifs as $prayNotif) {
+        $prayNotif->setNotifAdded(true);
+        $this->entityManager->persist($prayNotif);
+    }
+    $this->entityManager->flush();
+
+    $created = 0;
+
+    foreach ($prayNotifs as $prayNotif) {
+        $currentUser = $prayNotif->getUser();
+        $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
+
+        // remove existing
+        $toremoves = $this->entityManager->getRepository(NotifToSend::class)->findPrayNotifOfUser($currentUser);
+        foreach ($toremoves as $toremove) {
+            $this->entityManager->remove($toremove);
         }
         $this->entityManager->flush();
-        /** @var PrayNotification $prayNotif */
-        foreach ($prayNotifs as $prayNotif) {
-            $currentUser = $prayNotif->getUser();
-            $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($prayNotif->getUser());
-            //remove existing NotifToSend
-            $toremoves = $this->entityManager->getRepository(NotifToSend::class)->findPrayNotifOfUser($currentUser);
-            foreach ($toremoves as $toremove) {
-                $this->entityManager->remove($toremove);
-            }
-            $this->entityManager->flush();
-            foreach ($praytimesUI as $praytimeUI) {
-                if($praytimeUI['isNotified']) {
-                    $sendAt = new \DateTime();
-                    $sendAt->setTimestamp($praytimeUI['timestamp']);
-                    $now = new \DateTime();
-                    if ($sendAt > $now) {
-                        $notifToSend = new NotifToSend();
-                        $notifToSend->setView('pray');
-                        $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
-                        $this->entityManager->persist($notifToSend);
-                    }
-                }
-            }
-            $this->entityManager->flush();
-        }
 
-        return Command::SUCCESS;
+        $io->writeln(sprintf('User %d: %d candidate times', $currentUser->getId(), count($praytimesUI)));
+
+        foreach ($praytimesUI as $row) {
+            $sendAt = (new \DateTime())->setTimestamp($row['timestamp']);
+            $now = new \DateTime();
+            $io->writeln(sprintf(
+                ' - %s @ %s (ts=%d) isNotified=%s %s',
+                $row['key'], $sendAt->format('Y-m-d H:i:s T'), $row['timestamp'],
+                $row['isNotified'] ? 'yes' : 'no',
+                $sendAt > $now ? 'FUTURE' : 'PAST'
+            ));
+
+            if ($row['isNotified'] && $sendAt > $now) {
+                $notifToSend = new NotifToSend();
+                $notifToSend->setView('pray');
+                $notifToSend->setForPrayFromUI($currentUser, $row);
+                $this->entityManager->persist($notifToSend);
+                $created++;
+            }
+        }
+        $this->entityManager->flush();
     }
+
+    $io->success("Created $created NotifToSend rows");
+    return Command::SUCCESS;
+}
+
 }
