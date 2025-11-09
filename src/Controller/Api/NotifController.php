@@ -70,6 +70,7 @@ class NotifController extends AbstractController
             if ($tranche->getAmount() > $obligation->getRemainingAmount()) {
                 $notif->setStatus('decline');
                 $tranche->setStatus('refusée');
+                $notif->setIsRead(true);
                 $em->flush();
 
                 return $this->json([
@@ -78,7 +79,7 @@ class NotifController extends AbstractController
                     'trancheAmount'  => $tranche->getAmount(),
                 ], 400);
             }
-
+            $notif->setIsRead(true);
             $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
             $obligation->setRemainingAmount($newRemaining);
             if ($newRemaining === 0.0) {
@@ -95,6 +96,7 @@ class NotifController extends AbstractController
         $newnotif->setType('tranche');
         $newnotif->setView('tranche');
         $newnotif->setStatus('pending');
+        $newnotif->setIsRead(false);
 
         // who to notify?
         $sendToUser = ($currentUser->getId() === $obligation->getCreatedBy()->getId())
@@ -146,7 +148,7 @@ class NotifController extends AbstractController
         }
 
         $notifications = $notifRepo->findBy(
-            ['user' => $currentUser, 'type' => 'tranche', 'status' => 'pending'],
+            ['user' => $currentUser, 'type' => 'tranche', 'isRead' => false],
             ['sendAt' => 'DESC']
         );
 

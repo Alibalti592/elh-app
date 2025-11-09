@@ -35,8 +35,12 @@ class NotifToSend
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $view = null;
-#[ORM\Column(length: 20)]
-private ?string $status = 'pending';
+
+    #[ORM\Column(length: 20)]
+    private ?string $status = 'pending';
+
+    #[ORM\Column(type: Types::BOOLEAN, nullable: true)]
+    private ?bool $isRead = null;
 
     public function setForDece($currentUser, Dece $dece)
     {
@@ -48,16 +52,17 @@ private ?string $status = 'pending';
         $this->setSendAt($sendAt);
         $this->setType('dece-h24-administratif');
     }
-public function getStatus(): ?string
-{
-    return $this->status;
-}
 
-public function setStatus(string $status): static
-{
-    $this->status = $status;
-    return $this;
-}
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+
+    public function setStatus(string $status): static
+    {
+        $this->status = $status;
+        return $this;
+    }
 
     public function setForPrayFromUI($currentUser, $praytimeUI)
     {
@@ -159,5 +164,14 @@ public function setStatus(string $status): static
         $this->view = $view;
     }
 
+    public function getIsRead(): ?bool
+    {
+        return $this->isRead;
+    }
 
+    public function setIsRead(?bool $isRead): static
+    {
+        $this->isRead = $isRead;
+        return $this;
+    }
 }
