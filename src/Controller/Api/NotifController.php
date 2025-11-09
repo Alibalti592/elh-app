@@ -52,7 +52,8 @@ class NotifController extends AbstractController
 
         $tranche = $trancheRepo->find($trancheId);
         if (!$tranche) {
-
+             $notif->setIsRead(true);
+            $em->flush();
             return $this->json(['error' => 'Tranche introuvable'], 404);
         }
 
