@@ -227,6 +227,7 @@ public function create(Request $request): JsonResponse
                 $notif->setSendAt(new \DateTime());
                 $notif->setType('tranche');
                 $notif->setView('tranche');
+                $notif->setIsRead(false);
 
                 $this->entityManager->persist($notif);
                 $this->entityManager->flush();
@@ -561,6 +562,7 @@ public function update(Request $request, int $id): JsonResponse
         $notif->setSendAt(new \DateTime());
         $notif->setType('tranche');
         $notif->setView('tranche');
+        $notif->setIsRead(false);
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
@@ -643,6 +645,7 @@ public function delete(int $id): JsonResponse
         $notif->setType('tranche');
         $notif->setView('tranche');
         $notif->setStatus('pending');
+        $notif->setIsRead(false);
 
         $this->entityManager->persist($notif);
         $this->entityManager->flush();
