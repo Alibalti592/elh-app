@@ -164,6 +164,7 @@ class NotifController extends AbstractController
                 'view'   => $notif->getView(),
                 'sendAt' => $sendAt ? $sendAt->format('Y-m-d H:i:s') : null,
                 'status' => $notif->getStatus(),
+                'isRead' => $notif->getIsRead(),
             ];
         }
 
