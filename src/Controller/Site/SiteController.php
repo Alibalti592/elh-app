@@ -76,19 +76,19 @@ public function appSmartRedirect(Request $request): RedirectResponse
     $androidUrl = 'https://play.google.com/store/apps/details?id=com.elh.app&pli=1';
 
     // Optional: allow manual override with ?platform=ios | android (useful for testing/QRs)
-    $override = strtolower((string) $request->query->get('platform', ''));
-    if ($override === 'ios') {
-        return new RedirectResponse($iosUrl, 302, [
-            'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            'Pragma'        => 'no-cache',
-        ]);
-    }
-    if ($override === 'android') {
-        return new RedirectResponse($androidUrl, 302, [
-            'Cache-Control' => 'no-store, no-cache, must-revalidate',
-            'Pragma'        => 'no-cache',
-        ]);
-    }
+    // $override = strtolower((string) $request->query->get('platform', ''));
+    // if ($override === 'ios') {
+    //     return new RedirectResponse($iosUrl, 302, [
+    //         'Cache-Control' => 'no-store, no-cache, must-revalidate',
+    //         'Pragma'        => 'no-cache',
+    //     ]);
+    // }
+    // if ($override === 'android') {
+    //     return new RedirectResponse($androidUrl, 302, [
+    //         'Cache-Control' => 'no-store, no-cache, must-revalidate',
+    //         'Pragma'        => 'no-cache',
+    //     ]);
+    // }
 
     // Simple User-Agent detection
     $ua = strtolower($request->headers->get('User-Agent', ''));
