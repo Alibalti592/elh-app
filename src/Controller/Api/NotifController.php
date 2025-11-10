@@ -64,7 +64,7 @@ class NotifController extends AbstractController
             return $this->json(['error' => 'Obligation introuvable pour la tranche'], 400);
         }
 
-        $notif->setStatus($action);
+      
 
         $newRemaining = null;
 
@@ -72,7 +72,7 @@ class NotifController extends AbstractController
             $tranche->setStatus('validée');
 
             if ($tranche->getAmount() > $obligation->getRemainingAmount()) {
-                $notif->setStatus('decline');
+              
                 $tranche->setStatus('refusée');
                 $notif->setIsRead(true);
                 $em->flush();
