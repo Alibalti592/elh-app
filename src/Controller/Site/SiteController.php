@@ -71,8 +71,8 @@ class SiteController extends AbstractController
 public function appSmartRedirect(Request $request): RedirectResponse
 {
     // 🔧 Put your real store URLs here
-    $iosUrl     = 'https://apps.apple.com/app/id0000000000'; // e.g., https://apps.apple.com/app/id1234567890
-    $androidUrl = 'https://play.google.com/store/apps/details?id=com.yourcompany.yourapp';
+    $iosUrl     = 'https://apps.apple.com/us/app/muslim-connect/id6478540540'; // e.g., https://apps.apple.com/app/id1234567890
+    $androidUrl = 'https://play.google.com/store/apps/details?id=com.elh.app&pli=1';
 
     // Optional: allow manual override with ?platform=ios | android (useful for testing/QRs)
     $override = strtolower((string) $request->query->get('platform', ''));
