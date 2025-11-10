@@ -60,7 +60,13 @@ class SendNotifCommand extends Command
                 $data
             );
 
-            $this->entityManager->remove($notifToSend);
+            if($notifsToSend->getType() === 'tranche') {
+                $notifToSend->setStatus('sent');
+            } else {
+                $this->entityManager->remove($notifToSend);
+            }
+
+        
             $this->entityManager->flush();
         }
 
