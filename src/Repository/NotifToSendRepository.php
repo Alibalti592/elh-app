@@ -21,20 +21,26 @@ class NotifToSendRepository extends ServiceEntityRepository
         parent::__construct($registry, NotifToSend::class);
     }
 
-    public function findNotifToSend() {
-        $this->deleteToOldNotifs();
-        $qb = $this->createQueryBuilder('a');
-        $now = new \DateTime('now');
-        $now->setTimezone(new \DateTimeZone('Europe/Paris'));
-        $now->modify('+18 minutes');
-        $qb
-            ->andWhere('a.sendAt <= :now')
-            ->setMaxResults(400)
-            ->setParameters([
-                'now' => $now
-            ]);
-        return $qb->getQuery()->getResult();
-    }
+   public function findNotifToSend() {
+    $this->deleteToOldNotifs();
+
+    $qb = $this->createQueryBuilder('a');
+    $now = new \DateTime('now');
+    $now->setTimezone(new \DateTimeZone('Europe/Paris'));
+    $now->modify('+18 minutes');
+
+    $qb
+        ->andWhere('a.sendAt <= :now')
+        ->andWhere('a.status = :status')
+        ->setMaxResults(400)
+        ->setParameters([
+            'now' => $now,
+            'status' => 'pending',
+        ]);
+
+    return $qb->getQuery()->getResult();
+}
+
 
     public function findPrayNotifOfUser($user) {
         $qb = $this->createQueryBuilder('a');
@@ -48,16 +54,20 @@ class NotifToSendRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    public function deleteToOldNotifs() {
-        $qb = $this->createQueryBuilder('a');
-        $now = new \DateTime('now');
-        $now->setTimezone(new \DateTimeZone('Europe/Paris'));
-        $now->modify('-35 minutes');
-        $qb ->delete()
-            ->andWhere('a.sendAt < :now')
-            ->setParameters([
-                'now' => $now
-            ]);
-        return $qb->getQuery()->getResult();
-    }
+   public function deleteToOldNotifs() {
+    $qb = $this->createQueryBuilder('a');
+    $now = new \DateTime('now');
+    $now->setTimezone(new \DateTimeZone('Europe/Paris'));
+    $now->modify('-35 minutes');
+
+    $qb->delete()
+        ->andWhere('a.sendAt < :now')
+        ->andWhere('(a.isRead IS NULL OR a.isRead = :one)')
+        ->setParameters([
+            'now' => $now,
+            'one' => 1,
+        ]);
+
+    return $qb->getQuery()->getResult(); // kept same behavior as your code
+}
 }
