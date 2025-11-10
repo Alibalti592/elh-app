@@ -152,7 +152,7 @@ class NotifController extends AbstractController
         }
 
         $notifications = $notifRepo->findBy(
-            ['user' => $currentUser, 'type' => 'tranche', 'isRead' => false],
+            ['user' => $currentUser],
             ['sendAt' => 'DESC']
         );
 
