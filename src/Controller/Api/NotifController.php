@@ -209,7 +209,7 @@ class NotifController extends AbstractController
             ->getResult();
 
         foreach ($notifs as $n) {
-            $n->setStatus('validée');
+            $n->setIsRead(true);
         }
 
         $em->flush();
