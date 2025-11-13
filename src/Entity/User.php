@@ -69,20 +69,39 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $deletedAt = null;
 
+    #[ORM\Column(length: 10, options: ["default" => "unactive"])]
+    private ?string $status = 'unactive';
 
-    public function __construct()
-    {
-        $this->createAt = new \DateTimeImmutable();
-        $this->lastLogin = new \DateTime();
-        $this->pompes = new ArrayCollection();
-        $this->notifPlanneds = new ArrayCollection();
-        $this->showDetteInfos = true;
-    }
+public function __construct()
+{
+    $this->createAt = new \DateTimeImmutable();
+    $this->lastLogin = new \DateTime();
+    $this->pompes = new ArrayCollection();
+    $this->notifPlanneds = new ArrayCollection();
+    $this->showDetteInfos = true;
+    $this->status = 'unactive';
+}
+
 
     public function getId(): ?int
     {
         return $this->id;
     }
+public function getStatus(): ?string
+{
+    return $this->status;
+}
+
+public function setStatus(string $status): static
+{
+    if (!in_array($status, ['active', 'unactive'])) {
+        throw new \InvalidArgumentException("Invalid status");
+    }
+
+    $this->status = $status;
+
+    return $this;
+}
 
     public function getEmail(): ?string
     {
