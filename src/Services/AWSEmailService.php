@@ -76,6 +76,33 @@ class AWSEmailService {
 //            ]));
         }
     }
+    public function addEmailOtpToQueue($from, $to, $replyTo, $subject, $body, $type = 'Text') {
+        if (is_null($from)) {
+            $from = 'Muslim Connect <noreply@muslim-connect.fr>';
+        }
+        if (is_null($replyTo)) {
+            $replyTo = 'contact@muslim-connect.fr';
+        }
+
+        $to = $this->env === 'dev' ? 'elheidiapp@gmail.com' : $to;
+        $to = filter_var($to, FILTER_SANITIZE_EMAIL);
+
+        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            $this->logger->error('Invalid recipient email: '.$to);
+            return false;
+        }
+
+        $this->logger->info(sprintf('Sending email via SES: from=%s to=%s subject=%s', $from, $to, $subject));
+        $sent = $this->sendEmailWitSNS($from, $to, $replyTo, $subject, $body);
+
+        if (!$sent) {
+            $this->logger->error(sprintf('sendEmailWitSNS returned false for recipient %s', $to));
+        } else {
+            $this->logger->info(sprintf('Email sent (or accepted) for %s', $to));
+        }
+
+        return $sent;
+    }
 
     public function retrieveFromQueueAndSendEmails() {
         $result = $this->sqsClient->receiveMessage(new ReceiveMessageRequest([
