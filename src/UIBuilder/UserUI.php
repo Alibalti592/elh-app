@@ -57,7 +57,8 @@ class UserUI {
                 'created' => $user->getCreateAt()->format('d/m/Y'),
                 'thumb' => $userThumb,
                 'city' => $city,
-                'photo' => $photo
+                'photo' => $photo,
+                'status' => $user->getStatus(),
             ];
             $cachedDatas->set(json_encode($userUI));
             $this->cacheApp->save($cachedDatas);
