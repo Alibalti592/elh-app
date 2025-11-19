@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class PrayTimesService
 {
     public function __construct(private readonly EntityManagerInterface $entityManager) {
-        $this->PrayTime(3);
+        $this->PrayTime(2);
     }
 
 
@@ -93,7 +93,7 @@ class PrayTimesService
 
 
 public function getUserPrayTimes($userLocation, $timestampday) {
-    $this->setCalcMethod(3); 
+    $this->setCalcMethod(2); 
 
   
     $tz = new \DateTimeZone('Etc/GMT-1');
