@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class PrayTimesService
 {
     public function __construct(private readonly EntityManagerInterface $entityManager) {
-        $this->PrayTime(6);
+        $this->PrayTime(3);
     }
 
 
