@@ -44,9 +44,17 @@ class UserController extends AbstractController
         $userRegistration = $data->userRegistration;
         $jsonReponse = new JsonResponse();
         $alreadyExist = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $userRegistration->email]);
+        $phoneAlreadyExist = $this->entityManager->getRepository(User::class)->findOneBy(['phone' => $userRegistration->phone]);
         if(!is_null($alreadyExist)) {
             $jsonReponse->setData([
                 'message' => 'Ce compte existe déjà !'
+            ]);
+            $jsonReponse->setStatusCode(409);
+            return $jsonReponse;
+        }
+        if(!is_null($phoneAlreadyExist)) {
+            $jsonReponse->setData([
+                'message' => 'Ce numéro de téléphone est déjà utilisé pour un autre compte !'
             ]);
             $jsonReponse->setStatusCode(409);
             return $jsonReponse;
