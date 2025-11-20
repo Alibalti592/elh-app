@@ -435,7 +435,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
             $times = $this->adjustHighLatTimes($times);
         }
         //add / rm minutes as muslim pro !!
-       $times[0] += 1/60;
+       $times[0] -= 35/60;
         $times[1] += 1/60;
        $times[2] += 1/60;
       $times[5] += 3/60;
