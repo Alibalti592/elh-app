@@ -437,7 +437,7 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         //add / rm minutes as muslim pro !!
        $times[0] -= 19/60;
         $times[1] += 1/60;
-       $times[2] += 2/60;
+       $times[2] += 1/60;
       $times[5] += 3/60;
         $times[6] += 7/60;
         return $times;
