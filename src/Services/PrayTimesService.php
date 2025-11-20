@@ -93,7 +93,7 @@ class PrayTimesService
 
 
 public function getUserPrayTimes($userLocation, $timestampday) {
-    $this->setCalcMethod(6); 
+    $this->setCalcMethod(2); 
 
   
     $tz = new \DateTimeZone('Etc/GMT-1');
