@@ -119,7 +119,13 @@ public function verifyOtp(
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return new JsonResponse(['success' => true, 'message' => 'OTP verified and user activated']);
+        return new JsonResponse([
+        'success' => true,
+        'message' => 'OTP verified and user activated',
+        'status'  => $user->getStatus(),
+        'email'   => $user->getEmail(),
+        // or even the full user if you want
+    ]);
     }
 
     return new JsonResponse(['success' => false, 'message' => 'OTP does not match'], 400);
