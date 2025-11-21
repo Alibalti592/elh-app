@@ -53,13 +53,7 @@ class UserController extends AbstractController
             return $jsonReponse;
         }
        
-        if(!is_null($phoneAlreadyExist) && $userRegistration->phone != "") {
-            $jsonReponse->setData([
-                'message' => 'Ce numéro de téléphone est déjà utilisé !'
-            ]);
-            $jsonReponse->setStatusCode(409);
-            return $jsonReponse;
-        }
+        
         try {
             $user = new User();
             $user->setEmail($userRegistration->email);
