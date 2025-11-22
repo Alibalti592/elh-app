@@ -64,7 +64,7 @@ class OtpController extends AbstractController
             // Si l'OTP a été généré il y a moins de 60s → pas de nouvel email
             if ($generatedAt > $tooSoonLimit) {
                 return new JsonResponse([
-                    'message' => 'OTP already sent recently. Please check your email.',
+                    'message' => 'OTP envoyé récemment, veuillez patienter avant de demander un nouveau.',
                     'email'   => $email,
                     'otp'     => $existingCode, // Flutter continue de recevoir otp
                 ], 200);
