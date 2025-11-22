@@ -72,36 +72,44 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 10, options: ["default" => "unactive"])]
     private ?string $status = 'unactive';
 
-public function __construct()
-{
-    $this->createAt = new \DateTimeImmutable();
-    $this->lastLogin = new \DateTime();
-    $this->pompes = new ArrayCollection();
-    $this->notifPlanneds = new ArrayCollection();
-    $this->showDetteInfos = true;
-    $this->status = 'unactive';
-}
+    // 🔐 Nouveau: code OTP (6 chiffres max)
+    #[ORM\Column(length: 6, nullable: true)]
+    private ?string $otpCode = null;
 
+    // 🔐 Nouveau: date d’expiration de l’OTP
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $otpExpiresAt = null;
+
+    public function __construct()
+    {
+        $this->createAt = new \DateTimeImmutable();
+        $this->lastLogin = new \DateTime();
+        $this->pompes = new ArrayCollection();
+        $this->notifPlanneds = new ArrayCollection();
+        $this->showDetteInfos = true;
+        $this->status = 'unactive';
+    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
-public function getStatus(): ?string
-{
-    return $this->status;
-}
 
-public function setStatus(string $status): static
-{
-    if (!in_array($status, ['active', 'unactive'])) {
-        throw new \InvalidArgumentException("Invalid status");
+    public function getStatus(): ?string
+    {
+        return $this->status;
     }
 
-    $this->status = $status;
+    public function setStatus(string $status): static
+    {
+        if (!in_array($status, ['active', 'unactive'])) {
+            throw new \InvalidArgumentException("Invalid status");
+        }
 
-    return $this;
-}
+        $this->status = $status;
+
+        return $this;
+    }
 
     public function getEmail(): ?string
     {
@@ -191,11 +199,11 @@ public function setStatus(string $status): static
 
         return $this;
     }
+
     public function getFullname(): ?string
     {
-        return $this->firstname. ' '.$this->lastname;
+        return $this->firstname . ' ' . $this->lastname;
     }
-
 
     public function getCreateAt(): ?\DateTimeImmutable
     {
@@ -289,7 +297,7 @@ public function setStatus(string $status): static
 
     public function isShowDetteInfos()
     {
-        if(is_null($this->showDetteInfos)) {
+        if (is_null($this->showDetteInfos)) {
             return true;
         }
         return $this->showDetteInfos;
@@ -304,7 +312,7 @@ public function setStatus(string $status): static
 
     public function getPhonePrefix(): ?string
     {
-        if(is_null($this->phonePrefix) || $this->phonePrefix == "") {
+        if (is_null($this->phonePrefix) || $this->phonePrefix == "") {
             return "+33";
         }
         return $this->phonePrefix;
@@ -337,6 +345,32 @@ public function setStatus(string $status): static
     public function setDeletedAt(?\DateTimeImmutable $deletedAt): static
     {
         $this->deletedAt = $deletedAt;
+
+        return $this;
+    }
+
+    // 🔐 Getters / setters OTP
+
+    public function getOtpCode(): ?string
+    {
+        return $this->otpCode;
+    }
+
+    public function setOtpCode(?string $otpCode): static
+    {
+        $this->otpCode = $otpCode;
+
+        return $this;
+    }
+
+    public function getOtpExpiresAt(): ?\DateTimeInterface
+    {
+        return $this->otpExpiresAt;
+    }
+
+    public function setOtpExpiresAt(?\DateTimeInterface $otpExpiresAt): static
+    {
+        $this->otpExpiresAt = $otpExpiresAt;
 
         return $this;
     }
