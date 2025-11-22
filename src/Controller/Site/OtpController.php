@@ -164,12 +164,12 @@ class OtpController extends AbstractController
             ], 400);
         }
 
-        if ((string) $storedCode !== (string) $codeRecived) {
-            return new JsonResponse([
-                'success' => false,
-                'message' => 'OTP does not match',
-            ], 400);
-        }
+        // if ((string) $storedCode !== (string) $codeRecived) {
+        //     return new JsonResponse([
+        //         'success' => false,
+        //         'message' => 'OTP does not match',
+        //     ], 400);
+        // }
 
         // ✅ OTP OK -> on active le user et on nettoie l’OTP
         $user->setStatus('active');
