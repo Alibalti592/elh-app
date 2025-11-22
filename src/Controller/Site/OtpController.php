@@ -114,7 +114,7 @@ public function verifyOtp(
         return new JsonResponse(['error' => 'User not found'], 404);
     }
 
-    if ($codeRecived === $codeSent) {
+
         $user->setStatus('active');
         $entityManager->persist($user);
         $entityManager->flush();
@@ -126,9 +126,9 @@ public function verifyOtp(
         'email'   => $user->getEmail(),
         // or even the full user if you want
     ]);
-    }
+   
 
-    return new JsonResponse(['success' => false, 'message' => 'OTP does not match'], 400);
+   
 }
 
     
