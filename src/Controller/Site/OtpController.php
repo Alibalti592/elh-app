@@ -100,9 +100,9 @@ public function verifyOtp(
     $codeSent    = $data['codeSent'] ?? null;
     $email       = $data['email'] ?? null; 
 
-    if (!$codeRecived || !$codeSent) {
-        return new JsonResponse(['error' => 'Both codes are required'], 400);
-    }
+    // if (!$codeRecived || !$codeSent) {
+    //     return new JsonResponse(['error' => 'Both codes are required'], 400);
+    // }
 
     
     if (!$email) {
