@@ -55,6 +55,7 @@ security:
          - { path: ^/elh-api/test-api/sign-in-with-google-flutter, roles: PUBLIC_ACCESS }
          - { path: ^/elhadm, roles: ROLE_ADMIN }
          - { path: ^/elh-api/(login|token/refresh), roles: PUBLIC_ACCESS }
+         - { path: ^/elh-api/ini-reset-password, roles: PUBLIC_ACCESS }
          - { path: ^/elh-api/user-registration, roles: PUBLIC_ACCESS }
          - { path: ^/elh-api,       roles: IS_AUTHENTICATED_FULLY }
 
