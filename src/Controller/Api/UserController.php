@@ -20,12 +20,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpKernel\Attribute\AsController;
+use App\Services\NotificationService;
 
 #[AsController]
 class UserController extends AbstractController
 {
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UserUI $userUI,
-                                private readonly CsrfTokenService $csrfTokenService, private readonly S3Service $s3Service,
+                                private readonly CsrfTokenService $csrfTokenService, private readonly S3Service $s3Service, private readonly NotificationService $notificationService,
                                 private readonly RelationService $relationService, private readonly LoggerInterface $logger, private readonly UserService $userService) {}
 
     #[Route('/get-user-infos')]
@@ -306,6 +307,39 @@ public function registerGoogleFlutter(Request $request): JsonResponse
         return $jsonResponse;
     }
 }
+#[Route('/ini-reset-password')]
+    public function iniResetPassword(Request $request) {
+        $email = trim($request->get('email'));
+        $user = $this->entityManager->getRepository(User::class)->findOneBy([
+            'email' => $email
+        ]);
+        $jsonResponse = new JsonResponse();
+        if(is_null($user)) {
+            $jsonResponse->setStatusCode(500);
+            $jsonResponse->setData([
+                'message' => 'Compte introuvable avec cet email !'
+            ]);
+            return $jsonResponse;
+        }
+        $reset = $this->entityManager->getRepository(Resetpassword::class)->findOneBy([
+            'user' => $user
+        ]);
+        if(!is_null($reset)) {
+            //check if expired  !!
+            if($reset->isExpired()) {
+                $this->entityManager->remove($reset);
+                $this->entityManager->flush();
+            } else {
+                return $jsonResponse;
+            }
+        }
+        $reset = new Resetpassword();
+        $reset->setUser($user);
+        $this->entityManager->persist($reset);
+        $this->entityManager->flush();
+        $this->notificationService->resetPassword($user, $reset->getCode());
+        return $jsonResponse;
+    }
 
 
 }
