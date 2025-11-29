@@ -58,7 +58,8 @@ security:
       }
     - { path: ^/elhadm, roles: ROLE_ADMIN }
     - { path: ^/elh-api/(login|token/refresh), roles: PUBLIC_ACCESS }
-    - { path: ^/elh-api/ini-reset-password, roles: PUBLIC_ACCESS }
+
+    - { path: ^/elh-api/load-prieres, roles: PUBLIC_ACCESS }
     - { path: ^/elh-api/user-registration, roles: PUBLIC_ACCESS }
     - { path: ^/elh-api, roles: IS_AUTHENTICATED_FULLY }
 
