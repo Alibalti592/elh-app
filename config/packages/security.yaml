@@ -64,6 +64,8 @@ security:
 
     - { path: ^/elh-api/load-prieres, roles: PUBLIC_ACCESS }
     - { path: ^/elh-api/load-page-content, roles: PUBLIC_ACCESS }
+    - { path: ^/elh-api/load-faqs, roles: PUBLIC_ACCESS }
+    - { path: ^/elh-api/load-qsn, roles: PUBLIC_ACCESS }
     - { path: ^/elh-api/user-registration, roles: PUBLIC_ACCESS }
     - { path: ^/elh-api, roles: IS_AUTHENTICATED_FULLY }
 
