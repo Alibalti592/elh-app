@@ -12,6 +12,7 @@ use App\UIBuilder\LocationUI;
 use App\UIBuilder\UserUI;
 use Carbon\Carbon;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
 use Pharaonic\Hijri\HijriCarbon;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,7 +25,8 @@ class PriereController extends AbstractController
 
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UtilsService $utilsService,
                                 private readonly CRUDService $CRUDService, private readonly LocationUI $locationUI,
-                                private readonly PrayTimesService $prayTimesService, private readonly UserUI $userUI) {}
+                                private readonly PrayTimesService $prayTimesService, private readonly UserUI $userUI,
+                                private readonly JWTEncoderInterface $jwtEncoder) {}
 
     const prays = [
         ['key' => 'fajr', 'label' => 'Alfajr'],['key' => 'chorouq', 'label' => 'Chorouq'],['key' => 'dohr', 'label' => 'Duhur'],
@@ -35,10 +37,7 @@ class PriereController extends AbstractController
     public function loadPrays(Request $request): Response
     {
         $jsonResponse = new JsonResponse();
-        $currentUser = $this->getUser();
-        if(!$currentUser instanceof User) {
-            $currentUser = null;
-        }
+        $currentUser = $this->resolveCurrentUser($request);
 
         $locationData = $this->extractLocationData($request);
 
@@ -254,6 +253,47 @@ class PriereController extends AbstractController
         $location->setLng(floatval($locationData['lng']));
 
         return $location;
+    }
+
+    private function resolveCurrentUser(Request $request): ?User
+    {
+        $currentUser = $this->getUser();
+        if($currentUser instanceof User) {
+            return $currentUser;
+        }
+        $token = $this->extractBearerToken($request);
+        if(is_null($token)) {
+            return null;
+        }
+        try {
+            $payload = $this->jwtEncoder->decode($token);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if(!is_array($payload)) {
+            return null;
+        }
+        $identifier = $payload['username'] ?? $payload['email'] ?? null;
+        if(is_null($identifier)) {
+            return null;
+        }
+        $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $identifier]);
+        return $user instanceof User ? $user : null;
+    }
+
+    private function extractBearerToken(Request $request): ?string
+    {
+        $authHeader = $request->headers->get('Authorization');
+        if(!is_null($authHeader)) {
+            if(preg_match('/Bearer\\s+(.*)$/i', $authHeader, $matches)) {
+                return trim($matches[1]);
+            }
+        }
+        $token = $request->get('token');
+        if(is_string($token) && $token !== '') {
+            return $token;
+        }
+        return null;
     }
 
 }

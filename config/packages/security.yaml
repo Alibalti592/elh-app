@@ -16,6 +16,9 @@ security:
     test_api_public:
       pattern: ^/elh-api/test-api/sign-in-with-google-flutter
       security: false
+    load_prieres_public:
+      pattern: ^/elh-api/load-prieres
+      security: false
     #API PART
     login:
       pattern: ^/elh-api/login
