@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use App\Entity\Location;
 use App\Entity\PrayNotification;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
@@ -36,15 +37,30 @@ class PrayTimesService
         return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday);
     }
 
-   public function getPrayTimesUI($currentUser, $praytimes, $timestampday)
+    public function getPrayTimesOfDayForLocation(Location $location, $day = null): array
+    {
+        if(!is_null($day)) {
+            $today =  $day;
+        } else {
+            $today =  new \DateTime('now');
+        }
+        $timestampday = $today->getTimestamp();
+        $praytimes = $this->getUserPrayTimes($location, $timestampday);
+
+        return $this->getPrayTimesUI(null, $praytimes, $timestampday);
+    }
+
+   public function getPrayTimesUI(?User $currentUser, $praytimes, $timestampday)
 {
    
     $praysN = [];
-    $pn = $this->entityManager
-        ->getRepository(PrayNotification::class)
-        ->findOneBy(['user' => $currentUser]);
-    if ($pn) {
-        $praysN = $pn->getPrays() ?? [];
+    if ($currentUser instanceof User) {
+        $pn = $this->entityManager
+            ->getRepository(PrayNotification::class)
+            ->findOneBy(['user' => $currentUser]);
+        if ($pn) {
+            $praysN = $pn->getPrays() ?? [];
+        }
     }
 
    
