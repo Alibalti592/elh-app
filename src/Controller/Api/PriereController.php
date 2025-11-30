@@ -45,8 +45,15 @@ class PriereController extends AbstractController
         if($currentUser instanceof User) {
             if(!is_null($locationData)) {
                 $this->userUI->setUserLocation($currentUser, $locationData);
+                $userLocation = $currentUser->getLocation();
+                if($userLocation instanceof Location) {
+                    $this->applyLocationExtras($userLocation, $locationData);
+                    $this->entityManager->persist($userLocation);
+                    $this->entityManager->flush();
+                }
+            } else {
+                $userLocation = $currentUser->getLocation();
             }
-            $userLocation = $currentUser->getLocation();
         } elseif(!is_null($locationData)) {
             $userLocation = $this->buildLocationFromArray($locationData);
         }
@@ -195,6 +202,7 @@ class PriereController extends AbstractController
                 'postcode' => $request->get('postcode', $request->get('postCode')),
                 'label' => $request->get('label'),
                 'adress' => $request->get('adress', $request->get('address')),
+                'timezone' => $request->get('timezone', $request->get('tz')),
             ]);
             if(!is_null($normalized)) {
                 return $normalized;
@@ -216,6 +224,7 @@ class PriereController extends AbstractController
         $city = $locationArr['city'] ?? '';
         $region = $locationArr['region'] ?? '';
         $country = $locationArr['country'] ?? '';
+        $timezone = $locationArr['timezone'] ?? ($locationArr['tz'] ?? '');
         $postcode = $locationArr['postcode'] ?? ($locationArr['postCode'] ?? '');
         $label = $locationArr['label'] ?? '';
         if($label === '') {
@@ -238,6 +247,8 @@ class PriereController extends AbstractController
             'postcode' => $postcode ?? '',
             'lat' => floatval($locationArr['lat']),
             'lng' => floatval($locationArr['lng']),
+            'country' => $country ?? '',
+            'timezone' => $timezone,
         ];
     }
 
@@ -251,8 +262,24 @@ class PriereController extends AbstractController
         $location->setPostCode($locationData['postcode']);
         $location->setLat(floatval($locationData['lat']));
         $location->setLng(floatval($locationData['lng']));
+        if(isset($locationData['country'])) {
+            $location->setCountry($locationData['country']);
+        }
+        if(isset($locationData['timezone'])) {
+            $location->setTimezone($locationData['timezone']);
+        }
 
         return $location;
+    }
+
+    private function applyLocationExtras(Location $location, array $locationData): void
+    {
+        if(isset($locationData['country'])) {
+            $location->setCountry($locationData['country']);
+        }
+        if(isset($locationData['timezone']) && $locationData['timezone'] !== '') {
+            $location->setTimezone($locationData['timezone']);
+        }
     }
 
     private function resolveCurrentUser(Request $request): ?User
