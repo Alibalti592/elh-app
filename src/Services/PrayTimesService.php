@@ -36,7 +36,7 @@ class PrayTimesService
     private const DEFAULT_METHOD_KEY = 'MWL';
 
     private const COUNTRY_METHODS = [
-        'france' => 'CUSTOM', // UOIF 12°
+        'france' => 'CUSTOM',
         'tunisia' => 'MWL',
         'morocco' => 'MWL',
         'algeria' => 'MWL',
@@ -45,7 +45,7 @@ class PrayTimesService
     ];
 
     private const COUNTRY_OFFSETS = [
-        'france' => [ // minutes offset to align with UOIF for France
+        'france' => [
             'fajr' => -38,
             'chorouq' => 1,
             'dohr' => 1,
@@ -217,10 +217,8 @@ public function getUserPrayTimes($userLocation, $timestampday) {
             try {
                 return new \DateTimeZone($timezone);
             } catch (\Throwable $e) {
-                // fallback to guessing below
             }
         }
-        // fallback historique: timezone fixe +1 (Etc/GMT-1 -> offset +01:00)
         return new \DateTimeZone('Etc/GMT-1');
     }
 
