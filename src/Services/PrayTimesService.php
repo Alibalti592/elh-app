@@ -12,6 +12,48 @@ class PrayTimesService
         $this->PrayTime(6);
     }
 
+    private ?\DateTimeZone $currentTimezone = null;
+
+    private array $offsetMinutes = [
+        'fajr' => 0,
+        'chorouq' => 0,
+        'dohr' => 0,
+        'maghrib' => 0,
+        'icha' => 0,
+    ];
+
+    private const CALC_METHOD_IDS = [
+        'JAFARI' => 0,
+        'KARACHI' => 1,
+        'ISNA' => 2,
+        'MWL' => 3,
+        'MAKKAH' => 4,
+        'EGYPT' => 5,
+        'CUSTOM' => 6,
+        'TEHRAN' => 7,
+    ];
+
+    private const DEFAULT_METHOD_KEY = 'MWL';
+
+    private const COUNTRY_METHODS = [
+        'france' => 'CUSTOM', // UOIF 12°
+        'tunisia' => 'MWL',
+        'morocco' => 'MWL',
+        'algeria' => 'MWL',
+        'saudi arabia' => 'MAKKAH',
+        'arabie saoudite' => 'MAKKAH',
+    ];
+
+    private const COUNTRY_OFFSETS = [
+        'france' => [ // minutes offset to align with UOIF for France
+            'fajr' => -38,
+            'chorouq' => 1,
+            'dohr' => 1,
+            'maghrib' => 3,
+            'icha' => 25,
+        ],
+    ];
+
 
     const prays = [
         ['key' => 'fajr', 'label' => 'Al Fajr'],['key' => 'chorouq', 'label' => 'Chorouq'],['key' => 'dohr', 'label' => 'Duhur'],
@@ -34,7 +76,7 @@ class PrayTimesService
         }
         $timestampday = $today->getTimestamp();
         $praytimes = $this->getUserPrayTimes($userLocation, $timestampday);
-        return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday);
+        return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday, $userLocation);
     }
 
     public function getPrayTimesOfDayForLocation(Location $location, $day = null): array
@@ -47,10 +89,10 @@ class PrayTimesService
         $timestampday = $today->getTimestamp();
         $praytimes = $this->getUserPrayTimes($location, $timestampday);
 
-        return $this->getPrayTimesUI(null, $praytimes, $timestampday);
+        return $this->getPrayTimesUI(null, $praytimes, $timestampday, $location);
     }
 
-   public function getPrayTimesUI(?User $currentUser, $praytimes, $timestampday)
+   public function getPrayTimesUI(?User $currentUser, $praytimes, $timestampday, Location $location)
 {
    
     $praysN = [];
@@ -64,7 +106,7 @@ class PrayTimesService
     }
 
    
-    $tz = new \DateTimeZone('Etc/GMT-1');
+    $tz = $this->currentTimezone ?? $this->resolveTimezone($location);
     $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
 
    
@@ -109,21 +151,78 @@ class PrayTimesService
 
 
 public function getUserPrayTimes($userLocation, $timestampday) {
-    $this->setCalcMethod(6); 
-
-  
-    $tz = new \DateTimeZone('Etc/GMT-1');
-
-  
-    $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
-    $offsetSeconds = $tz->getOffset($day);  
-    $timezone = $offsetSeconds / 3600.0;   
-
+    $this->configureCalculationForLocation($userLocation, $timestampday);
     $lat = $userLocation->getLat();
     $lng = $userLocation->getLng();
 
+    [$timezone, $tz] = $this->resolveTimezoneData($userLocation, $timestampday);
+    $this->currentTimezone = $tz;
+
     return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
 }
+
+    private function configureCalculationForLocation(Location $location, int $timestamp): void
+    {
+        $this->offsetMinutes = $this->resolveOffsets($location);
+        $methodId = $this->resolveMethodId($location);
+        $this->setCalcMethod($methodId);
+    }
+
+    private function resolveOffsets(Location $location): array
+    {
+        $base = [
+            'fajr' => 0,
+            'chorouq' => 0,
+            'dohr' => 0,
+            'maghrib' => 0,
+            'icha' => 0,
+        ];
+        $country = $location->getCountry();
+        if(is_string($country) && $country !== '') {
+            $key = mb_strtolower(trim($country));
+            if(isset(self::COUNTRY_OFFSETS[$key])) {
+                return array_merge($base, self::COUNTRY_OFFSETS[$key]);
+            }
+        }
+        return $base;
+    }
+
+    private function resolveMethodId(Location $location): int
+    {
+        $country = $location->getCountry();
+        $methodKey = self::DEFAULT_METHOD_KEY;
+        if(is_string($country) && $country !== '') {
+            $key = mb_strtolower(trim($country));
+            if(isset(self::COUNTRY_METHODS[$key])) {
+                $methodKey = self::COUNTRY_METHODS[$key];
+            }
+        }
+        return self::CALC_METHOD_IDS[$methodKey] ?? self::CALC_METHOD_IDS[self::DEFAULT_METHOD_KEY];
+    }
+
+    private function resolveTimezoneData(Location $location, int $timestampday): array
+    {
+        $tz = $this->resolveTimezone($location);
+        $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+        $offsetSeconds = $tz->getOffset($day);
+        $timezone = $offsetSeconds / 3600.0;
+
+        return [$timezone, $tz];
+    }
+
+    private function resolveTimezone(Location $location): \DateTimeZone
+    {
+        $timezone = $location->getTimezone();
+        if(is_string($timezone) && $timezone !== '') {
+            try {
+                return new \DateTimeZone($timezone);
+            } catch (\Throwable $e) {
+                // fallback to guessing below
+            }
+        }
+        // fallback historique: timezone fixe +1 (Etc/GMT-1 -> offset +01:00)
+        return new \DateTimeZone('Etc/GMT-1');
+    }
 
 
    
@@ -450,12 +549,11 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         if ($this->adjustHighLats != $this->None) {
             $times = $this->adjustHighLatTimes($times);
         }
-        //add / rm minutes as muslim pro !!
-       $times[0] -= 38/60;
-        $times[1] += 1/60;
-       $times[2] += 1/60;
-      $times[5] += 3/60;
-        $times[6] += 25/60;
+        $times[0] += $this->offsetMinutes['fajr']/60;
+        $times[1] += $this->offsetMinutes['chorouq']/60;
+        $times[2] += $this->offsetMinutes['dohr']/60;
+        $times[5] += $this->offsetMinutes['maghrib']/60;
+        $times[6] += $this->offsetMinutes['icha']/60;
         return $times;
     }
 
