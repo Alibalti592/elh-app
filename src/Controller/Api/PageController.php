@@ -65,7 +65,7 @@ public function loadPageContent(Request $request): Response
 
     return new JsonResponse([
         'page' => $pageUI,
-        'showDetteInfos' => $this->getUser()->isShowDetteInfos()
+        'showDetteInfos' => ($this->getUser() instanceof User) ? $this->getUser()->isShowDetteInfos() : false
     ]);
 }
 
@@ -73,9 +73,11 @@ public function loadPageContent(Request $request): Response
     public function hasSeeUpd(Request $request): Response
     {
         $currentUser = $this->getUser();
-        $currentUser->setShowDetteInfos(false);
-        $this->entityManager->persist($currentUser);
-        $this->entityManager->flush();
+        if($currentUser instanceof User) {
+            $currentUser->setShowDetteInfos(false);
+            $this->entityManager->persist($currentUser);
+            $this->entityManager->flush();
+        }
         $jsonResponse = new JsonResponse();
         $jsonResponse->setData([]);
         return $jsonResponse;
