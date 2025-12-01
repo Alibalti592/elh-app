@@ -34,6 +34,12 @@ class Location
     #[ORM\Column(length: 255)]
     private ?string $adress = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $country = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $timezone = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -123,6 +129,30 @@ class Location
         return $this;
     }
 
+    public function getCountry(): ?string
+    {
+        return $this->country;
+    }
+
+    public function setCountry(?string $country): static
+    {
+        $this->country = $country;
+
+        return $this;
+    }
+
+    public function getTimezone(): ?string
+    {
+        return $this->timezone;
+    }
+
+    public function setTimezone(?string $timezone): static
+    {
+        $this->timezone = $timezone;
+
+        return $this;
+    }
+
     public function setFromUI($locationDatas)
     {
         $this->setLabel($locationDatas['label']);
@@ -132,5 +162,11 @@ class Location
         $this->setPostCode($locationDatas['postcode']);
         $this->setLat($locationDatas['lat']);
         $this->setLng($locationDatas['lng']);
+        if(isset($locationDatas['country'])) {
+            $this->setCountry($locationDatas['country']);
+        }
+        if(isset($locationDatas['timezone'])) {
+            $this->setTimezone($locationDatas['timezone']);
+        }
     }
 }
