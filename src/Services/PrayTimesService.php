@@ -12,6 +12,72 @@ class PrayTimesService
         $this->PrayTime(6);
     }
 
+    private ?\DateTimeZone $currentTimezone = null;
+
+    private array $offsetMinutes = [
+        'fajr' => 0,
+        'chorouq' => 0,
+        'dohr' => 0,
+        'asr' => 0,
+        'maghrib' => 0,
+        'icha' => 0,
+    ];
+
+    private const CALC_METHOD_IDS = [
+        'JAFARI' => 0,
+        'KARACHI' => 1,
+        'ISNA' => 2,
+        'MWL' => 3,
+        'MAKKAH' => 4,
+        'EGYPT' => 5,
+        'CUSTOM' => 6,
+        'TEHRAN' => 7,
+    ];
+
+    private const DEFAULT_METHOD_KEY = 'MWL';
+
+    private const COUNTRY_METHODS = [
+        'france' => 'CUSTOM',
+        'tunisia' => 'MWL',
+        'morocco' => 'MWL',
+        'algeria' => 'MWL',
+        'saudi arabia' => 'MAKKAH',
+        'arabie saoudite' => 'MAKKAH',
+    ];
+
+    private const COUNTRY_OFFSETS = [
+        'france' => [
+            'fajr' => -38,
+            'chorouq' => 1,
+            'dohr' => 1,
+            'asr' => 0,
+            'maghrib' => 3,
+            'icha' => 25,
+        ],
+    ];
+
+    /**
+     * City specific offsets in minutes, overriding country defaults when present.
+     */
+    private const CITY_OFFSETS = [
+        'france' => [
+            'angers' => [
+                'fajr' => -5,
+                'dohr' => 5,
+                'asr' => -2,
+                'maghrib' => 1,
+                'icha' => 25,
+            ],
+            'bordeaux' => [
+                'fajr' => -5,
+                'dohr' => 5,
+                'asr' => -1,
+                'maghrib' => 0,
+                'icha' => 4,
+            ],
+        ],
+    ];
+
 
     const prays = [
         ['key' => 'fajr', 'label' => 'Al Fajr'],['key' => 'chorouq', 'label' => 'Chorouq'],['key' => 'dohr', 'label' => 'Duhur'],
@@ -34,7 +100,7 @@ class PrayTimesService
         }
         $timestampday = $today->getTimestamp();
         $praytimes = $this->getUserPrayTimes($userLocation, $timestampday);
-        return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday);
+        return $this->getPrayTimesUI($currentUser, $praytimes, $timestampday, $userLocation);
     }
 
     public function getPrayTimesOfDayForLocation(Location $location, $day = null): array
@@ -47,10 +113,10 @@ class PrayTimesService
         $timestampday = $today->getTimestamp();
         $praytimes = $this->getUserPrayTimes($location, $timestampday);
 
-        return $this->getPrayTimesUI(null, $praytimes, $timestampday);
+        return $this->getPrayTimesUI(null, $praytimes, $timestampday, $location);
     }
 
-   public function getPrayTimesUI(?User $currentUser, $praytimes, $timestampday)
+   public function getPrayTimesUI(?User $currentUser, $praytimes, $timestampday, Location $location)
 {
    
     $praysN = [];
@@ -64,7 +130,7 @@ class PrayTimesService
     }
 
    
-    $tz = new \DateTimeZone('Etc/GMT-1');
+    $tz = $this->currentTimezone ?? $this->resolveTimezone($location);
     $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
 
    
@@ -109,21 +175,75 @@ class PrayTimesService
 
 
 public function getUserPrayTimes($userLocation, $timestampday) {
-    $this->setCalcMethod(6); 
-
-  
-    $tz = new \DateTimeZone('Etc/GMT-1');
-
-  
-    $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
-    $offsetSeconds = $tz->getOffset($day);  
-    $timezone = $offsetSeconds / 3600.0;   
-
+    $this->configureCalculationForLocation($userLocation, $timestampday);
     $lat = $userLocation->getLat();
     $lng = $userLocation->getLng();
 
+    [$timezone, $tz] = $this->resolveTimezoneData($userLocation, $timestampday);
+    $this->currentTimezone = $tz;
+
     return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
 }
+
+    private function configureCalculationForLocation(Location $location, int $timestamp): void
+    {
+        $this->offsetMinutes = $this->resolveOffsets($location);
+        $methodId = $this->resolveMethodId($location);
+        $this->setCalcMethod($methodId);
+    }
+
+    private function resolveOffsets(Location $location): array
+    {
+        $base = [
+            'fajr' => 0,
+            'chorouq' => 0,
+            'dohr' => 0,
+            'asr' => 0,
+            'maghrib' => 0,
+            'icha' => 0,
+        ];
+        $countryKey = $this->normalizeLocationKey($location->getCountry());
+        if(!is_null($countryKey) && isset(self::COUNTRY_OFFSETS[$countryKey])) {
+            $base = array_merge($base, self::COUNTRY_OFFSETS[$countryKey]);
+            $cityKey = $this->normalizeLocationKey($location->getCity());
+            if(!is_null($cityKey) && isset(self::CITY_OFFSETS[$countryKey][$cityKey])) {
+                $base = array_merge($base, self::CITY_OFFSETS[$countryKey][$cityKey]);
+            }
+        }
+        return $base;
+    }
+
+    private function resolveMethodId(Location $location): int
+    {
+        $methodKey = self::DEFAULT_METHOD_KEY;
+        $countryKey = $this->normalizeLocationKey($location->getCountry());
+        if(!is_null($countryKey) && isset(self::COUNTRY_METHODS[$countryKey])) {
+            $methodKey = self::COUNTRY_METHODS[$countryKey];
+        }
+        return self::CALC_METHOD_IDS[$methodKey] ?? self::CALC_METHOD_IDS[self::DEFAULT_METHOD_KEY];
+    }
+
+    private function resolveTimezoneData(Location $location, int $timestampday): array
+    {
+        $tz = $this->resolveTimezone($location);
+        $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+        $offsetSeconds = $tz->getOffset($day);
+        $timezone = $offsetSeconds / 3600.0;
+
+        return [$timezone, $tz];
+    }
+
+    private function resolveTimezone(Location $location): \DateTimeZone
+    {
+        $timezone = $location->getTimezone();
+        if(is_string($timezone) && $timezone !== '') {
+            try {
+                return new \DateTimeZone($timezone);
+            } catch (\Throwable $e) {
+            }
+        }
+        return new \DateTimeZone('Etc/GMT-1');
+    }
 
 
    
@@ -450,13 +570,25 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         if ($this->adjustHighLats != $this->None) {
             $times = $this->adjustHighLatTimes($times);
         }
-        //add / rm minutes as muslim pro !!
-       $times[0] -= 38/60;
-        $times[1] += 1/60;
-       $times[2] += 1/60;
-      $times[5] += 3/60;
-        $times[6] += 25/60;
+        $times[0] += $this->offsetMinutes['fajr']/60;
+        $times[1] += $this->offsetMinutes['chorouq']/60;
+        $times[2] += $this->offsetMinutes['dohr']/60;
+        $times[3] += $this->offsetMinutes['asr']/60;
+        $times[5] += $this->offsetMinutes['maghrib']/60;
+        $times[6] += $this->offsetMinutes['icha']/60;
         return $times;
+    }
+
+    private function normalizeLocationKey(?string $value): ?string
+    {
+        if(!is_string($value)) {
+            return null;
+        }
+        $trimmed = trim($value);
+        if($trimmed === '') {
+            return null;
+        }
+        return mb_strtolower($trimmed);
     }
 
 
