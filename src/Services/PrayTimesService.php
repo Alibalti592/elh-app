@@ -18,6 +18,7 @@ class PrayTimesService
         'fajr' => 0,
         'chorouq' => 0,
         'dohr' => 0,
+        'asr' => 0,
         'maghrib' => 0,
         'icha' => 0,
     ];
@@ -49,8 +50,31 @@ class PrayTimesService
             'fajr' => -38,
             'chorouq' => 1,
             'dohr' => 1,
+            'asr' => 0,
             'maghrib' => 3,
             'icha' => 25,
+        ],
+    ];
+
+    /**
+     * City specific offsets in minutes, overriding country defaults when present.
+     */
+    private const CITY_OFFSETS = [
+        'france' => [
+            'angers' => [
+                'fajr' => -5,
+                'dohr' => 5,
+                'asr' => -2,
+                'maghrib' => 1,
+                'icha' => 25,
+            ],
+            'bordeaux' => [
+                'fajr' => -5,
+                'dohr' => 5,
+                'asr' => -1,
+                'maghrib' => 0,
+                'icha' => 4,
+            ],
         ],
     ];
 
@@ -174,14 +198,16 @@ public function getUserPrayTimes($userLocation, $timestampday) {
             'fajr' => 0,
             'chorouq' => 0,
             'dohr' => 0,
+            'asr' => 0,
             'maghrib' => 0,
             'icha' => 0,
         ];
-        $country = $location->getCountry();
-        if(is_string($country) && $country !== '') {
-            $key = mb_strtolower(trim($country));
-            if(isset(self::COUNTRY_OFFSETS[$key])) {
-                return array_merge($base, self::COUNTRY_OFFSETS[$key]);
+        $countryKey = $this->normalizeLocationKey($location->getCountry());
+        if(!is_null($countryKey) && isset(self::COUNTRY_OFFSETS[$countryKey])) {
+            $base = array_merge($base, self::COUNTRY_OFFSETS[$countryKey]);
+            $cityKey = $this->normalizeLocationKey($location->getCity());
+            if(!is_null($cityKey) && isset(self::CITY_OFFSETS[$countryKey][$cityKey])) {
+                $base = array_merge($base, self::CITY_OFFSETS[$countryKey][$cityKey]);
             }
         }
         return $base;
@@ -189,13 +215,10 @@ public function getUserPrayTimes($userLocation, $timestampday) {
 
     private function resolveMethodId(Location $location): int
     {
-        $country = $location->getCountry();
         $methodKey = self::DEFAULT_METHOD_KEY;
-        if(is_string($country) && $country !== '') {
-            $key = mb_strtolower(trim($country));
-            if(isset(self::COUNTRY_METHODS[$key])) {
-                $methodKey = self::COUNTRY_METHODS[$key];
-            }
+        $countryKey = $this->normalizeLocationKey($location->getCountry());
+        if(!is_null($countryKey) && isset(self::COUNTRY_METHODS[$countryKey])) {
+            $methodKey = self::COUNTRY_METHODS[$countryKey];
         }
         return self::CALC_METHOD_IDS[$methodKey] ?? self::CALC_METHOD_IDS[self::DEFAULT_METHOD_KEY];
     }
@@ -550,9 +573,22 @@ public function getUserPrayTimes($userLocation, $timestampday) {
         $times[0] += $this->offsetMinutes['fajr']/60;
         $times[1] += $this->offsetMinutes['chorouq']/60;
         $times[2] += $this->offsetMinutes['dohr']/60;
+        $times[3] += $this->offsetMinutes['asr']/60;
         $times[5] += $this->offsetMinutes['maghrib']/60;
         $times[6] += $this->offsetMinutes['icha']/60;
         return $times;
+    }
+
+    private function normalizeLocationKey(?string $value): ?string
+    {
+        if(!is_string($value)) {
+            return null;
+        }
+        $trimmed = trim($value);
+        if($trimmed === '') {
+            return null;
+        }
+        return mb_strtolower($trimmed);
     }
 
 
