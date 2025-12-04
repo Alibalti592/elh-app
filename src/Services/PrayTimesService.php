@@ -66,11 +66,11 @@ class PrayTimesService
     private const CITY_OFFSETS = [
         'france' => [
             'paris' => [
-                'fajr' => 32,
-                'dohr' => 4,
+                'fajr' => -6,
+                'dohr' => 1,
                 'asr' => -2,
-                'maghrib' => -3,
-                'icha' => -20,
+                'maghrib' => 0,
+                'icha' => 5,
             ],
             'angers' => [
                 'fajr' => -6,
