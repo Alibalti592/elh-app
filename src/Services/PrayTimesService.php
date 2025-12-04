@@ -87,11 +87,11 @@ class PrayTimesService
                 'icha' => 1,
             ],
             'lyon' => [
-                'fajr' => 33,
-                'dohr' => 4,
-                'asr' => -1,
-                'maghrib' => -3,
-                'icha' => -21,
+                'fajr' => -6,
+                'dohr' => 5,
+                'asr' => -2,
+                'maghrib' => 0,
+                'icha' => 4,
             ],
             'nantes' => [
                 'fajr' => 33,
