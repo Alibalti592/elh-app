@@ -70,6 +70,7 @@ class PriereController extends AbstractController
         } else {
             $praytimesUI = $this->prayTimesService->getPrayTimesOfDayForLocation($userLocation);
         }
+        $resolvedCity = $this->prayTimesService->getLastResolvedCityKey();
         Carbon::mixin(HijriCarbon::class);
         $todayMuslim = Carbon::now();
         $todayMuslimString = $todayMuslim->toHijri()->format('d F Y');
@@ -78,7 +79,8 @@ class PriereController extends AbstractController
             'location' => $this->locationUI->getLocation($userLocation),
             'date' => $today->format('d/m/Y'),
             'dateMuslim' => $todayMuslimString,
-            'prieres' => $praytimesUI
+            'prieres' => $praytimesUI,
+            'resolvedCity' => $resolvedCity
         ];
 
         //si on a passé heure last priere load tomorrow ...
@@ -97,11 +99,13 @@ class PriereController extends AbstractController
                 } else {
                     $praytimesUI = $this->prayTimesService->getPrayTimesOfDayForLocation($userLocation, $tomorrow);
                 }
+                $resolvedCity = $this->prayTimesService->getLastResolvedCityKey();
                 $praytimeUI = [
                     'location' => $this->locationUI->getLocation($userLocation),
                     'date' =>   $today->format('d/m/Y'),
                     'dateMuslim' => $todayMuslimString,
-                    'prieres' => $praytimesUI
+                    'prieres' => $praytimesUI,
+                    'resolvedCity' => $resolvedCity
                 ];
             }
         }
