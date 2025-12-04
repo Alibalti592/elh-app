@@ -15,6 +15,7 @@ class PrayTimesService
     }
 
     private ?\DateTimeZone $currentTimezone = null;
+    private ?string $lastResolvedCityKey = null;
 
     private array $offsetMinutes = [
         'fajr' => 0,
@@ -259,6 +260,7 @@ class PrayTimesService
             'bordeaux'         => ['lat' => 44.8378, 'lng' => -0.5792],
             'strasbourg'       => ['lat' => 48.5734, 'lng' => 7.7521],
             'lyon'             => ['lat' => 45.7640, 'lng' => 4.8357],
+            'paris'            => ['lat' => 48.8566, 'lng' => 2.3522],
             'nantes'           => ['lat' => 47.2184, 'lng' => -1.5536],
             'toulouse'         => ['lat' => 43.6047, 'lng' => 1.4442],
             'montpellier'      => ['lat' => 43.6108, 'lng' => 3.8767],
@@ -281,6 +283,23 @@ class PrayTimesService
             'clermont-ferrand' => ['lat' => 45.7772, 'lng' => 3.0870],
             'limoges'          => ['lat' => 45.8336, 'lng' => 1.2611],
             'metz'             => ['lat' => 49.1193, 'lng' => 6.1757],
+            'rouen'            => ['lat' => 49.4431, 'lng' => 1.0993],
+            'avignon'          => ['lat' => 43.9493, 'lng' => 4.8055],
+            'mulhouse'         => ['lat' => 47.7508, 'lng' => 7.3359],
+            'orleans'          => ['lat' => 47.9030, 'lng' => 1.9093],
+            'argenteuil'       => ['lat' => 48.9472, 'lng' => 2.2467],
+            'vitry-sur-seine'  => ['lat' => 48.7872, 'lng' => 2.3923],
+            'creteil'          => ['lat' => 48.7904, 'lng' => 2.4556],
+            'montreuil'        => ['lat' => 48.8638, 'lng' => 2.4485],
+            'nanterre'         => ['lat' => 48.8924, 'lng' => 2.2065],
+            'colombes'         => ['lat' => 48.9231, 'lng' => 2.2540],
+            'saint-denis'      => ['lat' => 48.9362, 'lng' => 2.3574],
+            'annecy'           => ['lat' => 45.8992, 'lng' => 6.1294],
+            'ajaccio'          => ['lat' => 41.9192, 'lng' => 8.7386],
+            'colmar'           => ['lat' => 48.0797, 'lng' => 7.3585],
+            'poitiers'         => ['lat' => 46.5802, 'lng' => 0.3404],
+            'perpignan'        => ['lat' => 42.6887, 'lng' => 2.8948],
+            'brest'            => ['lat' => 48.3904, 'lng' => -4.4861],
         ],
     ];
 
@@ -398,6 +417,7 @@ class PrayTimesService
             'icha' => 0,
         ];
 
+        $this->lastResolvedCityKey = null;
         $countryKey = $this->normalizeLocationKey($location->getCountry());
 
         if (!is_null($countryKey) && isset(self::COUNTRY_OFFSETS[$countryKey])) {
@@ -407,6 +427,7 @@ class PrayTimesService
             // offsets ville (match par nom ou ville de référence la plus proche via lat/lng)
             $cityKey = $this->resolveCityKey($location, $countryKey);
             if (!is_null($cityKey) && isset(self::CITY_OFFSETS[$countryKey][$cityKey])) {
+                $this->lastResolvedCityKey = $cityKey;
                 $base = array_merge($base, self::CITY_OFFSETS[$countryKey][$cityKey]);
             }
         }
@@ -446,6 +467,11 @@ class PrayTimesService
         }
 
         return new \DateTimeZone('Etc/GMT-1');
+    }
+
+    public function getLastResolvedCityKey(): ?string
+    {
+        return $this->lastResolvedCityKey;
     }
 
     // ======================= NOUVELLE LOGIQUE VILLE =======================
