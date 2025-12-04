@@ -15,7 +15,6 @@ class PrayTimesService
     }
 
     private ?\DateTimeZone $currentTimezone = null;
-    private ?string $lastResolvedCityKey = null;
 
     private array $offsetMinutes = [
         'fajr' => 0,
@@ -399,7 +398,6 @@ class PrayTimesService
             'icha' => 0,
         ];
 
-        $this->lastResolvedCityKey = null;
         $countryKey = $this->normalizeLocationKey($location->getCountry());
 
         if (!is_null($countryKey) && isset(self::COUNTRY_OFFSETS[$countryKey])) {
@@ -409,7 +407,6 @@ class PrayTimesService
             // offsets ville (match par nom ou ville de référence la plus proche via lat/lng)
             $cityKey = $this->resolveCityKey($location, $countryKey);
             if (!is_null($cityKey) && isset(self::CITY_OFFSETS[$countryKey][$cityKey])) {
-                $this->lastResolvedCityKey = $cityKey;
                 $base = array_merge($base, self::CITY_OFFSETS[$countryKey][$cityKey]);
             }
         }
@@ -449,11 +446,6 @@ class PrayTimesService
         }
 
         return new \DateTimeZone('Etc/GMT-1');
-    }
-
-    public function getLastResolvedCityKey(): ?string
-    {
-        return $this->lastResolvedCityKey;
     }
 
     // ======================= NOUVELLE LOGIQUE VILLE =======================
