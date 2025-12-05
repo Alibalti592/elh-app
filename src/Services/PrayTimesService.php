@@ -87,11 +87,11 @@ class PrayTimesService
                 'icha' => 4,
             ],
             'strasbourg' => [
-                'fajr' => -39,
+                'fajr' => -6,
                 'dohr' => 4,
-                'asr' => 4,
-                'maghrib' => 8,
-                'icha' => 26,
+                'asr' => 5,
+                'maghrib' => 15,
+                'icha' => 14,
             ],
             'lyon' => [
                 'fajr' => -6,
@@ -103,16 +103,16 @@ class PrayTimesService
             'nantes' => [
                 'fajr' => -6,
                 'dohr' => 4,
-                'asr' => -1,
+                'asr' => 0,
                 'maghrib' => 1,
                 'icha' => 5,
             ],
             'toulouse' => [
-                'fajr' => -79,
-                'dohr' => -60,
-                'asr' => -59,
+                'fajr' => -75,
+                'dohr' => -55,
+                'asr' => -57,
                 'maghrib' => -55,
-                'icha' => -42,
+                'icha' => -41,
             ],
             'montpellier' => [
                 'fajr' => -6,
