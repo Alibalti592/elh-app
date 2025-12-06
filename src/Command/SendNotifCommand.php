@@ -33,9 +33,27 @@ class SendNotifCommand extends Command
         set_time_limit(600);
 
         $notifsToSend = $this->entityManager->getRepository(NotifToSend::class)->findNotifToSend();
+        $sentPrayKeys = [];
 
         /** @var NotifToSend $notifToSend */
         foreach ($notifsToSend as $notifToSend) {
+            if ($notifToSend->getView() === 'pray') {
+                $sendAt = $notifToSend->getSendAt();
+                $key = implode('|', [
+                    $notifToSend->getUser()?->getId(),
+                    $notifToSend->getType(),
+                    $sendAt?->getTimestamp(),
+                ]);
+
+                if (isset($sentPrayKeys[$key])) {
+                    $this->entityManager->remove($notifToSend);
+                    $this->entityManager->flush();
+                    continue;
+                }
+
+                $sentPrayKeys[$key] = true;
+            }
+
             $data = null;
 
             if (!is_null($notifToSend->getView())) {
