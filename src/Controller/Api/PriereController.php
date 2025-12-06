@@ -144,35 +144,33 @@ class PriereController extends AbstractController
         } else {
             $prays[] = $prayKey;
         }
-        //update pray Notif !!
-        $notifToSend = $this->entityManager->getRepository(NotifToSend::class)->findOneBy([
+
+        $existingNotifs = $this->entityManager->getRepository(NotifToSend::class)->findBy([
             'user' => $currentUser,
             'type' => $prayKey
         ]);
+        foreach ($existingNotifs as $notifToRemove) {
+            $this->entityManager->remove($notifToRemove);
+        }
+
         if($sendNotif) {
             $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
-            if(is_null($notifToSend)) {
-                $prayName = '';
-                $praytimeUI = null;
-                $timestamp = null;
-                foreach ($praytimesUI as $pray) {
-                    if($pray['key'] == $prayKey) {
-                        $prayName = $pray['label'];
-                        $timestamp = $pray['timestamp'] - 60*15 ; //-15min
-                        $praytimeUI = $pray;
-                    }
-                }
-                if(!is_null($praytimeUI) && $timestamp > time()) {
-                    $notifToSend = new NotifToSend();
-                    $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
-                    $this->entityManager->persist($notifToSend);
-                    $this->entityManager->flush();
+            $praytimeUI = null;
+            $timestamp = null;
+            foreach ($praytimesUI as $pray) {
+                if($pray['key'] === $prayKey) {
+                    $timestamp = $pray['timestamp'] - 60*15 ; //-15min
+                    $praytimeUI = $pray;
+                    break;
                 }
             }
-        } elseif(!is_null($notifToSend)) {
-            $this->entityManager->remove($notifToSend);
-            $this->entityManager->flush();
+            if(!is_null($praytimeUI) && $timestamp > time()) {
+                $notifToSend = new NotifToSend();
+                $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
+                $this->entityManager->persist($notifToSend);
+            }
         }
+
         $prayNotification->setPrays($prays);
         $this->entityManager->persist($prayNotification);
         $this->entityManager->flush();
