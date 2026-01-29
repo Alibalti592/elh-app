@@ -16,6 +16,8 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class NotifToSendRepository extends ServiceEntityRepository
 {
+    public const PRAY_TYPES = ["fajr","asr","chorouq","dohr","icha","maghreb"];
+
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, NotifToSend::class);
@@ -46,12 +48,28 @@ class NotifToSendRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('a');
         $qb
             ->andWhere('a.user = :user')
+            ->andWhere('a.view = :view')
             ->andWhere('a.type IN (:types)')
             ->setParameters([
                 'user' => $user,
-                'types' => ["fajr","asr","chorouq","dohr","icha","maghreb"]
+                'view' => 'pray',
+                'types' => self::PRAY_TYPES
             ]);
         return $qb->getQuery()->getResult();
+    }
+
+    public function deletePrayNotifOfUser($user): int
+    {
+        return $this->createQueryBuilder('a')
+            ->delete()
+            ->andWhere('a.user = :user')
+            ->andWhere('a.view = :view')
+            ->andWhere('a.type IN (:types)')
+            ->setParameter('user', $user)
+            ->setParameter('view', 'pray')
+            ->setParameter('types', self::PRAY_TYPES)
+            ->getQuery()
+            ->execute();
     }
 
    public function deleteToOldNotifs() {

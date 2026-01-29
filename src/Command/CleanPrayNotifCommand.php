@@ -5,6 +5,7 @@ use App\Entity\NotifToSend;
 use App\Services\FcmNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
@@ -12,6 +13,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 // => éxecuter la nuit 1 seule fois et éviter que l'autre tache d'envoi puisse s'éxecuter en même temps !!!
 class CleanPrayNotifCommand extends Command
 {
+    use LockableTrait;
+
     protected static $defaultName = 'app:clean-pray-notif';
 
     private $entityManager;
@@ -25,6 +28,9 @@ class CleanPrayNotifCommand extends Command
     }
 
     protected function execute(InputInterface $input, OutputInterface $output) {
+        if (!$this->lock()) {
+            return Command::SUCCESS;
+        }
         $conn = $this->entityManager->getConnection();
         $sql = "UPDATE `pray_notification` SET `notif_added`=0 WHERE 1";
         $stmt = $conn->prepare($sql);

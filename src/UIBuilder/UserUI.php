@@ -13,13 +13,15 @@ use App\Services\UtilsService;
 use App\Twig\UserThumbExtension;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Component\Lock\LockFactory;
 
 class UserUI {
 
 
     public function __construct(private readonly EntityManagerInterface $entityManager,
                                 private readonly CacheItemPoolInterface $cacheApp, private readonly S3Service $s3Service,
-                                private readonly PrayTimesService $prayTimesService) {
+                                private readonly PrayTimesService $prayTimesService,
+                                private readonly LockFactory $lockFactory) {
 
     }
 
@@ -96,37 +98,34 @@ class UserUI {
     }
 
     public function updatePriereNotifs($user) {
-        $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy([
-            'user' => $user
-        ]);
-        if(!is_null($prayNotification)) {
-            $prays = $prayNotification->getPrays();
-            foreach ($prays as $prayKey) {
-                $notifToSend = $this->entityManager->getRepository(NotifToSend::class)->findOneBy([
-                    'user' => $user,
-                    'type' => $prayKey
-                ]);
-                if(!is_null($notifToSend)) {
-                    $this->entityManager->remove($notifToSend);
-                }
-            }
-            $this->entityManager->flush();
-            //add new
-            $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($prayNotification->getUser());
-            foreach ($praytimesUI as $praytimeUI) {
-                if($praytimeUI['isNotified']) {
-                    $sendAt = new \DateTime();
-                    $sendAt->setTimestamp($praytimeUI['timestamp']);
-                    $now = new \DateTime();
-                    if ($sendAt > $now) {
-                        $notifToSend = new NotifToSend();
-                        $notifToSend->setView('pray');
-                        $notifToSend->setForPrayFromUI($user, $praytimeUI);
-                        $this->entityManager->persist($notifToSend);
+        $userLock = $this->lockFactory->createLock('pray_notif_user_'.$user->getId(), 30);
+        if (!$userLock->acquire()) {
+            return;
+        }
+        try {
+            $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy([
+                'user' => $user
+            ]);
+            if(!is_null($prayNotification)) {
+                $this->entityManager->getRepository(NotifToSend::class)->deletePrayNotifOfUser($user);
+                //add new
+                $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($prayNotification->getUser());
+                foreach ($praytimesUI as $praytimeUI) {
+                    if($praytimeUI['isNotified']) {
+                        $sendAt = new \DateTime();
+                        $sendAt->setTimestamp($praytimeUI['timestamp']);
+                        $now = new \DateTime();
+                        if ($sendAt > $now) {
+                            $notifToSend = new NotifToSend();
+                            $notifToSend->setForPrayFromUI($user, $praytimeUI);
+                            $this->entityManager->persist($notifToSend);
+                        }
                     }
                 }
+                $this->entityManager->flush();
             }
-            $this->entityManager->flush();
+        } finally {
+            $userLock->release();
         }
     }
 

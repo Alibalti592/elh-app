@@ -39,6 +39,9 @@ class NotifToSend
     #[ORM\Column(length: 20)]
     private ?string $status = 'pending';
 
+    #[ORM\Column(length: 191, nullable: true, unique: true)]
+    private ?string $dedupeKey = null;
+
     #[ORM\Column(type: Types::BOOLEAN, nullable: true)]
     private ?bool $isRead = null;
 
@@ -68,13 +71,22 @@ class NotifToSend
     {
         $sendAt = new \DateTime();
         $sendAt->setTimezone(new \DateTimeZone("Europe/Paris"));
-        $sendAt->setTimestamp($praytimeUI['timestamp']);
+        $timestamp = (int) $praytimeUI['timestamp'];
+        $sendAt->setTimestamp($timestamp);
         $this->setUser($currentUser);
         $this->setTitle("Rappel de prière");
         $this->setView("pray");
         $this->setMessage("Vous entrez bientôt dans le temps de prière de la Salât : ".$praytimeUI['label']);
         $this->setSendAt($sendAt);
         $this->setType($praytimeUI['key']);
+        if ($currentUser instanceof User) {
+            $this->setDedupeKey(self::buildPrayDedupeKey($currentUser, (string) $praytimeUI['key'], $timestamp));
+        }
+    }
+
+    public static function buildPrayDedupeKey(User $user, string $prayKey, int $timestamp): string
+    {
+        return sprintf('pray|%d|%s|%d', (int) $user->getId(), $prayKey, $timestamp);
     }
 
     public function getId(): ?int
@@ -172,6 +184,17 @@ class NotifToSend
     public function setIsRead(?bool $isRead): static
     {
         $this->isRead = $isRead;
+        return $this;
+    }
+
+    public function getDedupeKey(): ?string
+    {
+        return $this->dedupeKey;
+    }
+
+    public function setDedupeKey(?string $dedupeKey): static
+    {
+        $this->dedupeKey = $dedupeKey;
         return $this;
     }
 }
