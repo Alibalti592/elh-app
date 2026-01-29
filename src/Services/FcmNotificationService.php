@@ -52,8 +52,14 @@ class FcmNotificationService {
         ]);
         //https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages?hl=fr#AndroidConfig
         if(!empty($fcmTokens)) {
+            $sentTokens = [];
             foreach ($fcmTokens as $fcmToken) {
-                $this->sendMessageV2($fcmToken->getFcmToken(), $title, $message, null);
+                $token = $fcmToken->getFcmToken();
+                if (isset($sentTokens[$token])) {
+                    continue;
+                }
+                $sentTokens[$token] = true;
+                $this->sendMessageV2($token, $title, $message, null);
             }
         }
     }

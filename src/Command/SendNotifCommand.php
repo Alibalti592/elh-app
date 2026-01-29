@@ -5,11 +5,14 @@ use App\Entity\NotifToSend;
 use App\Services\FcmNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LockableTrait;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class SendNotifCommand extends Command
 {
+    use LockableTrait;
+
     protected static $defaultName = 'app:sendNotif';
 
     private $entityManager;
@@ -31,6 +34,9 @@ class SendNotifCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         set_time_limit(600);
+        if (!$this->lock()) {
+            return Command::SUCCESS;
+        }
 
         $notifsToSend = $this->entityManager->getRepository(NotifToSend::class)->findNotifToSend();
         $sentPrayKeys = [];
@@ -52,6 +58,12 @@ class SendNotifCommand extends Command
                 }
 
                 $sentPrayKeys[$key] = true;
+            }
+
+            if ($notifToSend->getView() === 'pray') {
+                if (!$this->claimNotif($notifToSend)) {
+                    continue;
+                }
             }
 
             $data = null;
@@ -89,5 +101,22 @@ class SendNotifCommand extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    private function claimNotif(NotifToSend $notifToSend): bool
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+        $updated = $qb
+            ->update(NotifToSend::class, 'n')
+            ->set('n.status', ':sending')
+            ->andWhere('n.id = :id')
+            ->andWhere('n.status = :pending')
+            ->setParameter('sending', 'sending')
+            ->setParameter('pending', 'pending')
+            ->setParameter('id', $notifToSend->getId())
+            ->getQuery()
+            ->execute();
+
+        return $updated === 1;
     }
 }

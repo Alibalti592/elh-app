@@ -18,6 +18,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Routing\Annotation\Route;
 
 class PriereController extends AbstractController
@@ -26,7 +27,7 @@ class PriereController extends AbstractController
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UtilsService $utilsService,
                                 private readonly CRUDService $CRUDService, private readonly LocationUI $locationUI,
                                 private readonly PrayTimesService $prayTimesService, private readonly UserUI $userUI,
-                                private readonly JWTEncoderInterface $jwtEncoder) {}
+                                private readonly JWTEncoderInterface $jwtEncoder, private readonly LockFactory $lockFactory) {}
 
     const prays = [
         ['key' => 'fajr', 'label' => 'Alfajr'],['key' => 'chorouq', 'label' => 'Chorouq'],['key' => 'dohr', 'label' => 'Duhur'],
@@ -123,6 +124,10 @@ class PriereController extends AbstractController
         if(!$currentUser instanceof User) {
             return new JsonResponse([], Response::HTTP_UNAUTHORIZED);
         }
+        $userLock = $this->lockFactory->createLock('pray_notif_user_'.$currentUser->getId(), 30);
+        if (!$userLock->acquire(true)) {
+            return new JsonResponse(['error' => 'Notification lock busy'], 423);
+        }
         $prayNotification = $this->entityManager->getRepository(PrayNotification::class)->findOneBy([
             'user' => $currentUser
         ]);
@@ -145,35 +150,40 @@ class PriereController extends AbstractController
             $prays[] = $prayKey;
         }
 
-        $existingNotifs = $this->entityManager->getRepository(NotifToSend::class)->findBy([
-            'user' => $currentUser,
-            'type' => $prayKey
-        ]);
-        foreach ($existingNotifs as $notifToRemove) {
-            $this->entityManager->remove($notifToRemove);
-        }
+        try {
+            $existingNotifs = $this->entityManager->getRepository(NotifToSend::class)->findBy([
+                'user' => $currentUser,
+                'type' => $prayKey,
+                'view' => 'pray'
+            ]);
+            foreach ($existingNotifs as $notifToRemove) {
+                $this->entityManager->remove($notifToRemove);
+            }
 
-        if($sendNotif) {
-            $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
-            $praytimeUI = null;
-            $timestamp = null;
-            foreach ($praytimesUI as $pray) {
-                if($pray['key'] === $prayKey) {
-                    $timestamp = $pray['timestamp'] - 60*15 ; //-15min
-                    $praytimeUI = $pray;
-                    break;
+            if($sendNotif) {
+                $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
+                $praytimeUI = null;
+                $timestamp = null;
+                foreach ($praytimesUI as $pray) {
+                    if($pray['key'] === $prayKey) {
+                        $timestamp = $pray['timestamp'] - 60*15 ; //-15min
+                        $praytimeUI = $pray;
+                        break;
+                    }
+                }
+                if(!is_null($praytimeUI) && $timestamp > time()) {
+                    $notifToSend = new NotifToSend();
+                    $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
+                    $this->entityManager->persist($notifToSend);
                 }
             }
-            if(!is_null($praytimeUI) && $timestamp > time()) {
-                $notifToSend = new NotifToSend();
-                $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
-                $this->entityManager->persist($notifToSend);
-            }
-        }
 
-        $prayNotification->setPrays($prays);
-        $this->entityManager->persist($prayNotification);
-        $this->entityManager->flush();
+            $prayNotification->setPrays($prays);
+            $this->entityManager->persist($prayNotification);
+            $this->entityManager->flush();
+        } finally {
+            $userLock->release();
+        }
         $jsonResponse = new JsonResponse();
         $jsonResponse->setData([]);
         return $jsonResponse;
