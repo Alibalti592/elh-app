@@ -172,6 +172,20 @@ class LayoutController extends AbstractController
 
                         ]
                     ],
+                    [
+                        'name' => "Push notifications",
+                        'icon' => "icon-bell",
+                        'id' => 'push_notifications',
+                        'hasSub' => true,
+                        'subItems' => [
+                            [
+                                'name' => "Push notifications",
+                                'icon' => "icon-bell",
+                                'url' => $this->generateUrl("admin_push_notifications"),
+                                'r' => "admin_push_notifications",
+                            ],
+                        ]
+                    ],
 
                 ]
             ];
