@@ -132,44 +132,50 @@
           <img src="{{ logoElhSrc }}" style="display: block; width: 200px; margin: 20px auto">
         </div>
       </div>
-      <div style="margin-bottom: 20px">
-        <h2>Dettes en cours</h2>
-        {% for jed in jeds %}
-          <div class="dette">
-            <div class="title">Preteur : <strong>{{ jed.cardOtherName }} </strong>| Tel : </span>{{ jed.cardOtherTel }}</div>
-            <div class="title">Emprunteur : {{ jed.createdByName }}</div>
-            <div class="info"><span>Montant initial : </span>{{ jed.amount }}€</div>
-            <div class="info"><span>Montant restant : </span>{{ jed.remainingAmount }}€</div>
+      {% if jeds is not empty %}
+        <div style="margin-bottom: 20px">
+          <h2>On me doit</h2>
+          {% for jed in jeds %}
+            <div class="dette">
+              <div class="title">Preteur : <strong>{{ jed.cardOtherName }} </strong>| Tel : </span>{{ jed.cardOtherTel }}</div>
+              <div class="title">Emprunteur : {{ jed.createdByName }}</div>
+              <div class="info"><span>Montant initial : </span>{{ jed.amount }}€</div>
+              <div class="info"><span>Montant restant : </span>{{ jed.remainingAmount }}€</div>
 
-            <div class="info"><span>Date : </span>{{ jed.dateDisplay }}</div>
-          </div>
-        {% endfor %}
-      </div>
-      <div style="margin-bottom: 20px">
-        <h2>Prêts en cours</h2>
-        {% for onm in onms %}
-          <div class="dette">
-            <div class="title">Emprunteur : <strong>{{ onm.cardOtherName }} </strong>| Tel : </span>{{ onm.cardOtherTel }}</div>
-            <div class="title">Preteur : {{ onm.createdByName }}</div>
-            <div class="info"><span>Montant initial : </span>{{ onm.amount }}€</div>
-            <div class="info"><span>Montant restant : </span>{{ onm.remainingAmount }}€</div>
+              <div class="info"><span>Date : </span>{{ jed.dateDisplay }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% if onms is not empty %}
+        <div style="margin-bottom: 20px">
+          <h2>Je dois</h2>
+          {% for onm in onms %}
+            <div class="dette">
+              <div class="title">Emprunteur : <strong>{{ onm.cardOtherName }} </strong>| Tel : </span>{{ onm.cardOtherTel }}</div>
+              <div class="title">Preteur : {{ onm.createdByName }}</div>
+              <div class="info"><span>Montant initial : </span>{{ onm.amount }}€</div>
+              <div class="info"><span>Montant restant : </span>{{ onm.remainingAmount }}€</div>
 
-            <div class="info"><span>Date : </span>{{ onm.dateDisplay }}</div>
-          </div>
-        {% endfor %}
-      </div>
+              <div class="info"><span>Date : </span>{{ onm.dateDisplay }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
 
-      <div style="margin-bottom: 20px">
-        <h2>Amanas en cours</h2>
-        {% for amana in amanas %}
-          <div class="dette">
-            <div class="title">Entre : <strong>{{ amana.cardOtherName }} </strong>| Tel : </span>{{ amana.cardOtherTel }}</div>
-            <div class="title">et : {{ amana.createdByName }}</div>
-            <div class="info"><span>Date : </span>{{ amana.dateDisplay }}</div>
-          </div>
-        {% endfor %}
-      </div>
+      {% if amanas is not empty %}
+        <div style="margin-bottom: 20px">
+          <h2>Amanas en cours</h2>
+          {% for amana in amanas %}
+            <div class="dette">
+              <div class="title">Entre : <strong>{{ amana.cardOtherName }} </strong>| Tel : </span>{{ amana.cardOtherTel }}</div>
+              <div class="title">et : {{ amana.createdByName }}</div>
+              <div class="info"><span>Date : </span>{{ amana.dateDisplay }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
     </div>
   </div>
@@ -177,5 +183,4 @@
 </div>
 </body>
 </html>
-
 
