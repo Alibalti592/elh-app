@@ -358,10 +358,11 @@ class PrayTimesService
         $tz = $this->currentTimezone ?? $this->resolveTimezone($location);
         $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
 
-        $keep = [0, 2, 3, 5, 6];
+        $keep = [0, 1, 2, 3, 5, 6];
 
         $map = [
             0 => 0,
+            1 => 1,
             2 => 2,
             3 => 3,
             5 => 4,
