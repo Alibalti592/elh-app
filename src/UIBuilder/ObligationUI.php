@@ -160,7 +160,8 @@ class ObligationUI {
             'goods' => $testament->getGoods(),
             'toilette' => $testament->getToilette(),
             'fixe' => $testament->getFixe(),
-            'lastwill' => $testament->getLastwill()
+            'lastwill' => $testament->getLastwill(),
+            'updateAt' => $testament->getUpdateAt()?->format('Y-m-d H:i:s'),
         ];
     }
 }
