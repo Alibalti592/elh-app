@@ -255,12 +255,7 @@ class TestamentController extends AbstractController
         ]);
         $jeunText = "Aucun jour à rattraper";
         if(!is_null($jeun)) {
-            $restNbDays = $jeun->getNbDays() - $jeun->getJeunNbDaysR();
-            if($restNbDays == 1) {
-                $jeunText = $restNbDays. " jour à rattraper pour ".$jeun->getSelectedYear();
-            } elseif($restNbDays > 1) {
-                $jeunText = $restNbDays. " jours à rattraper pour ".$jeun->getSelectedYear();
-            }
+            $jeunText = $jeun->getRemainingDaysSummary();
         }
 //        return $this->render('layout/pdf.twig', [
 //            'testament' => $testament,

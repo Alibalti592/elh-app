@@ -4,10 +4,40 @@
 {% endblock %}
 
 {% block content %}
-    <div id="admin-push-notifications">
-        <div class="card">
-            <div class="card-body">
-                <p class="text-muted mb-0">Page Push notifications</p>
+    <div id="admin-push-notifications" class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" action="{{ path('admin_push_notifications_send') }}">
+                        <div class="form-group mb-3">
+                            <label for="push-title">Titre</label>
+                            <input id="push-title" class="form-control" type="text" name="title" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="push-message">Message</label>
+                            <textarea id="push-message" class="form-control" name="message" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="push-view">Redirection (view)</label>
+                            <select id="push-view" class="form-control" name="view">
+                                {% for value, label in views %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" type="submit">Envoyer à tous les utilisateurs</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted mb-0">
+                        Cette action crée une notification pour chaque utilisateur actif.
+                        L’envoi effectif se fait via la commande d’envoi des notifications.
+                    </p>
+                </div>
             </div>
         </div>
     </div>
