@@ -12,6 +12,7 @@ use App\Entity\SalatShare;
 use App\Services\CRUDService;
 use App\Services\UtilsService;
 use App\UIBuilder\ObligationUI;
+use App\UIBuilder\MosqueUI;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -23,7 +24,8 @@ class DeuilController extends AbstractController
 {
 
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UtilsService $utilsService,
-                                private readonly CRUDService $CRUDService, private readonly ObligationUI $obligationUI) {}
+                                private readonly CRUDService $CRUDService, private readonly ObligationUI $obligationUI,
+                                private readonly MosqueUI $mosqueUI) {}
 
     #[Route('/load-deuil-dates')]
     public function loadDeuilDates(Request $request): Response
@@ -170,6 +172,14 @@ class DeuilController extends AbstractController
         if(!is_null($jeun)) {
             $nbJeun = $jeun->getTotalRemainingDays();
         }
+        $favoriteMosques = [];
+        $mosqueFavs = $this->entityManager->getRepository(MosqueFavorite::class)->findMosqueFavorited($currentUser);
+        foreach ($mosqueFavs as $mosqueFav) {
+            $mosque = $mosqueFav->getMosque();
+            $mosqueUI = $this->mosqueUI->getMosque($mosque);
+            $mosqueUI['isFavorite'] = true;
+            $favoriteMosques[] = $mosqueUI;
+        }
 
 
         $jsonResponse = new JsonResponse();
@@ -181,6 +191,7 @@ class DeuilController extends AbstractController
             'nbCartes' => $nbCartes,
             'nbDeuils' => count($deuilDates),
             'nbJeun' => $nbJeun,
+            'favoriteMosques' => $favoriteMosques,
         ]);
         return $jsonResponse;
     }
