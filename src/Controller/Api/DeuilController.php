@@ -4,6 +4,7 @@ namespace App\Controller\Api;
 use App\Entity\CarteShare;
 use App\Entity\Deuil;
 use App\Entity\DeuilDate;
+use App\Entity\Jeun;
 use App\Entity\MosqueFavorite;
 use App\Entity\Obligation;
 use App\Entity\Salat;
@@ -162,6 +163,13 @@ class DeuilController extends AbstractController
 //            ->countObligationToRefund($currentUser, 'amana');
         $nbCartes = $this->entityManager->getRepository(CarteShare::class)
             ->countSharedCartes($currentUser);
+        $nbJeun = 0;
+        $jeun = $this->entityManager->getRepository(Jeun::class)->findOneBy([
+            'createdBy' => $currentUser
+        ]);
+        if(!is_null($jeun)) {
+            $nbJeun = $jeun->getTotalRemainingDays();
+        }
 
 
         $jsonResponse = new JsonResponse();
@@ -172,6 +180,7 @@ class DeuilController extends AbstractController
             'nbJeds' => $nbJeds,
             'nbCartes' => $nbCartes,
             'nbDeuils' => count($deuilDates),
+            'nbJeun' => $nbJeun,
         ]);
         return $jsonResponse;
     }
