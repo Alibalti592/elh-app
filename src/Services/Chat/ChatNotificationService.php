@@ -6,6 +6,7 @@ use App\Entity\ChatNotification;
 use App\Entity\ChatParticipant;
 use App\Entity\ChatThread;
 use App\Entity\FcmToken;
+use App\Entity\NotifToSend;
 use App\Services\CacheService;
 use App\Services\FcmNotificationService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -68,6 +69,33 @@ class ChatNotificationService {
     }
 
     public function sendFcmChatNotification($users, ChatMessage $chatMessage, ChatThread $thread) {
+        if (!empty($users)) {
+            $createdBy = $chatMessage->getCreatedBy();
+            $name = $createdBy->getFirstname() .' '. $createdBy->getLastname();
+            $title = 'Nouveau message de ' .$name;
+            $message = strlen($chatMessage->getContent()) > 50 ? mb_substr($chatMessage->getContent(), 0, 50).'...' : $chatMessage->getContent();
+            foreach ($users as $user) {
+                if (is_null($user)) {
+                    continue;
+                }
+                $notif = new NotifToSend();
+                $notif->setUser($user);
+                $notif->setTitle($title);
+                $notif->setMessage($message);
+                $notif->setSendAt(new \DateTime());
+                $notif->setType('chat');
+                $notif->setView('chatview');
+                $notif->setDatas(json_encode([
+                    'view' => 'chatview',
+                    'threadId' => $thread->getId(),
+                    'userId' => $createdBy->getId(),
+                ], JSON_UNESCAPED_UNICODE));
+                $notif->setStatus('sent');
+                $notif->setIsRead(false);
+                $this->entityManager->persist($notif);
+            }
+            $this->entityManager->flush();
+        }
         //FCM token
         $fcmTokens = $this->entityManager->getRepository(FcmToken::class)->findTokensOfUsers($users);
         $this->fcmNotificationService->sendFcmChatNotification($fcmTokens, $chatMessage);
