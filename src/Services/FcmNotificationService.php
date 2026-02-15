@@ -59,7 +59,7 @@ class FcmNotificationService {
                     continue;
                 }
                 $sentTokens[$token] = true;
-                $this->sendMessageV2($token, $title, $message, null);
+                $this->sendMessageV2($token, $title, $message, $data);
             }
         }
     }

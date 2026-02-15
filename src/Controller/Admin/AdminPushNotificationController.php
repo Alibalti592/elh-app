@@ -25,6 +25,7 @@ class AdminPushNotificationController extends AbstractController
         'shared_testament_view' => 'Testament partagé',
         'pray' => 'Prière',
         'tranche' => 'Tranches',
+        'feedback_view' => 'Avis / critiques',
     ];
 
     public function __construct(private readonly EntityManagerInterface $entityManager)

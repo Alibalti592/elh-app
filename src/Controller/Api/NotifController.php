@@ -18,6 +18,27 @@ class NotifController extends AbstractController
     public function __construct(private FcmNotificationService $fcmNotificationService)
     {}
 
+    private function markReadAndDelete(NotifToSend $notif, EntityManagerInterface $em): void
+    {
+        $notif->setIsRead(true);
+        $em->remove($notif);
+    }
+
+    private function isActionRequiredTrancheNotif(NotifToSend $notif): bool
+    {
+        if ($notif->getType() !== 'tranche') {
+            return false;
+        }
+
+        $datas = json_decode($notif->getDatas() ?: '[]', true);
+        if (!is_array($datas)) {
+            return false;
+        }
+
+        $actions = $datas['actions'] ?? null;
+        return is_array($actions) && count($actions) > 0;
+    }
+
     #[Route('/notif/{id}/respond', name: 'notif_respond', methods: ['POST'])]
     public function respondNotif(
         Request $request,
@@ -52,14 +73,14 @@ class NotifController extends AbstractController
 
         $tranche = $trancheRepo->find($trancheId);
         if (!$tranche) {
-             $notif->setIsRead(true);
+            $this->markReadAndDelete($notif, $em);
             $em->flush();
             return $this->json(['error' => 'Tranche introuvable'], 404);
         }
 
         $obligation = $tranche->getObligation();
         if (!$obligation) {
-            $notif->setIsRead(true);
+            $this->markReadAndDelete($notif, $em);
             $em->flush();
             return $this->json(['error' => 'Obligation introuvable pour la tranche'], 400);
         }
@@ -74,7 +95,7 @@ class NotifController extends AbstractController
             if ($tranche->getAmount() > $obligation->getRemainingAmount()) {
               
                 $tranche->setStatus('refusée');
-                $notif->setIsRead(true);
+                $this->markReadAndDelete($notif, $em);
                 $em->flush();
 
                 return $this->json([
@@ -83,7 +104,7 @@ class NotifController extends AbstractController
                     'trancheAmount'  => $tranche->getAmount(),
                 ], 400);
             }
-            $notif->setIsRead(true);
+            $this->markReadAndDelete($notif, $em);
             $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
             $obligation->setRemainingAmount($newRemaining);
             if ($newRemaining === 0.0) {
@@ -92,6 +113,7 @@ class NotifController extends AbstractController
         } else {
             // decline
             $tranche->setStatus('refusée');
+            $this->markReadAndDelete($notif, $em);
         }
 
         // build counter-party notif
@@ -208,15 +230,23 @@ class NotifController extends AbstractController
             ->getQuery()
             ->getResult();
 
+        $updatedIds = [];
+        $skippedIds = [];
         foreach ($notifs as $n) {
-            $n->setIsRead(true);
+            if ($this->isActionRequiredTrancheNotif($n)) {
+                $skippedIds[] = $n->getId();
+                continue;
+            }
+            $this->markReadAndDelete($n, $em);
+            $updatedIds[] = $n->getId();
         }
 
         $em->flush();
 
         return $this->json([
-            'updated' => count($notifs),
-            'ids'     => array_map(static fn($n) => $n->getId(), $notifs),
+            'updated' => count($updatedIds),
+            'ids'     => $updatedIds,
+            'skipped' => $skippedIds,
         ]);
     }
 }
