@@ -41,21 +41,6 @@
           margin: 0 auto;
       }
 
-      .page-badge {
-          width: 180px;
-          margin: 0 auto 14px;
-          text-align: center;
-          padding: 6px 10px;
-          font-size: 10px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          color: #8f9779;
-          background: #fffdf9;
-          border: 1px solid #ede1d0;
-          border-radius: 999px;
-      }
-
       .card {
           background: #ffffff;
           border: 1px solid #f0e5d6;
@@ -68,20 +53,12 @@
           width: 100%;
       }
 
-      .is-last-card {
-          min-height: 920px;
-          display: flex;
-          flex-direction: column;
-      }
-
-      .is-last-card .brand {
-          margin-top: auto;
-          padding-top: 22px;
-      }
-
       .main-card {
           position: relative;
           overflow: hidden;
+          min-height: 980px;
+          display: flex;
+          flex-direction: column;
       }
 
       .accent-bar {
@@ -208,8 +185,10 @@
       }
 
       .brand {
-          padding: 16px 0 0;
+          margin-top: auto;
+          padding: 22px 0 0;
           text-align: center;
+          page-break-inside: avoid;
       }
 
       .brand-name {
@@ -235,7 +214,7 @@
       }
 
       .annex-title {
-          margin: 0 0 12px;
+          margin: 10px 0 12px;
           color: #8f9779;
           font-family: "Times New Roman", Georgia, serif;
           font-size: 30px;
@@ -287,9 +266,7 @@
 </head>
 <body>
 <div class="page">
-  <div class="page-badge">Aperçu du testament</div>
-
-  <div class="card main-card{% if not hasFinancialDetails %} is-last-card{% endif %}">
+  <div class="card main-card">
     <div class="accent-bar"></div>
     <div class="card-content">
       <p class="quote">
@@ -384,22 +361,9 @@
           <div class="fasting-box">{{ jeunTextValue }}</div>
         </div>
       {% endif %}
-    </div>
 
-    {% if not hasFinancialDetails %}
-      <div class="brand">
-        <p class="brand-name">MUSLIM CONNECT</p>
-        <p class="brand-sub">Document personnel</p>
-        <img class="brand-logo" src="{{ logoElhSrc }}" alt="Muslim Connect">
-      </div>
-    {% endif %}
-  </div>
-
-  {% if hasFinancialDetails %}
-    <div class="page-badge">Annexes des dettes</div>
-
-    <div class="card is-last-card">
-      <div class="card-content">
+      {% if hasFinancialDetails %}
+        <div class="section">
         <h2 class="annex-title">Détails financiers</h2>
 
         {% if jeds is not empty %}
@@ -444,15 +408,16 @@
             {% endfor %}
           </div>
         {% endif %}
-      </div>
-
-      <div class="brand">
-        <p class="brand-name">MUSLIM CONNECT</p>
-        <p class="brand-sub">Document personnel</p>
-        <img class="brand-logo" src="{{ logoElhSrc }}" alt="Muslim Connect">
-      </div>
+        </div>
+      {% endif %}
     </div>
-  {% endif %}
+
+    <div class="brand">
+      <p class="brand-name">MUSLIM CONNECT</p>
+      <p class="brand-sub">Document personnel</p>
+      <img class="brand-logo" src="{{ logoElhSrc }}" alt="Muslim Connect">
+    </div>
+  </div>
 </div>
 </body>
 </html>
