@@ -184,6 +184,12 @@ class LayoutController extends AbstractController
                                 'url' => $this->generateUrl("admin_push_notifications"),
                                 'r' => "admin_push_notifications",
                             ],
+                            [
+                                'name' => "Avis / critiques",
+                                'icon' => "icon-message-circle",
+                                'url' => $this->generateUrl("admin_feedback_list"),
+                                'r' => "admin_feedback_list",
+                            ],
                         ]
                     ],
 

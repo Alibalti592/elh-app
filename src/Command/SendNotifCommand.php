@@ -66,21 +66,27 @@ class SendNotifCommand extends Command
                 }
             }
 
-            $data = null;
+            $data = [];
+
+            $datas = json_decode($notifToSend->getDatas() ?: '[]', true);
+            if (is_array($datas)) {
+                $data = $datas;
+            }
 
             if (!is_null($notifToSend->getView())) {
-                $data = [
-                    'view' => $notifToSend->getView(),
-                    
-                ];
+                $data['view'] = $notifToSend->getView();
+            }
 
-                // 👉 Si la notif est pour une tranche, on ajoute les actions Accepter / Refuser
-                if ($notifToSend->getView() === 'tranche_action') {
-                    $data['actions'] = [
-                        ['id' => 'accepter', 'title' => 'Accepter'],
-                        ['id' => 'refuser', 'title' => 'Refuser'],
-                    ];
-                }
+            // Compat: keep legacy action buttons if this view is used.
+            if (($data['view'] ?? null) === 'tranche_action' && !isset($data['actions'])) {
+                $data['actions'] = [
+                    ['id' => 'accepter', 'title' => 'Accepter'],
+                    ['id' => 'refuser', 'title' => 'Refuser'],
+                ];
+            }
+
+            if (empty($data)) {
+                $data = null;
             }
 
             $this->fcmNotificationService->sendFcmDefaultNotification(
