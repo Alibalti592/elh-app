@@ -9,6 +9,7 @@ use App\Entity\Relation;
 use App\Entity\Testament;
 use App\Entity\TestamentShare;
 use App\Entity\User;
+use App\Entity\NotifToSend;
 use App\Services\CRUDService;
 use App\Services\FcmNotificationService;
 use App\Services\PdfGeneratorService;
@@ -166,7 +167,19 @@ class TestamentController extends AbstractController
                     $title = $currentUser->getFullName();
                     $message = "Vous a partagé son testament";
                     $data['view'] = "shared_testament_view";
+                    $notifToSend = new NotifToSend();
+                    $notifToSend->setUser($userToShareWith);
+                    $notifToSend->setTitle($title);
+                    $notifToSend->setMessage($message);
+                    $notifToSend->setSendAt(new \DateTime());
+                    $notifToSend->setType('testament_share');
+                    $notifToSend->setView($data['view']);
+                    $notifToSend->setDatas(json_encode($data, JSON_UNESCAPED_UNICODE));
+                    $notifToSend->setStatus('sent');
+                    $notifToSend->setIsRead(false);
+                    $this->entityManager->persist($notifToSend);
                     $this->fcmNotificationService->sendFcmDefaultNotification($userToShareWith, $title, $message, $data);
+                    $this->entityManager->flush();
                 }
             } else {
                 if(!is_null($testamentShare)) {

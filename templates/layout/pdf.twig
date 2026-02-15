@@ -1,186 +1,362 @@
 <!DOCTYPE html>
 {% set htmlLocale = app.request.locale %}
-<!--[if lte IE 9]> <html class="no-js lt-ie9" lang="{{ htmlLocale }}"> <![endif]-->
-<!--[if gt IE 9]><!--> <html lang="{{ htmlLocale }}"> <!--<![endif]-->
+<html lang="{{ htmlLocale }}">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>
-    Testament {{ appName }}
-  </title>
-
-  {% block metaDescription %}
-    <meta name="description" content="{% block description %}{% endblock %}" />
-  {% endblock %}
-
-  {# Webfonts #}
-  <link href='https://fonts.googleapis.com/css?family=Montserrat|Roboto:400,300,700;Open+Sans:400,600,700' rel='stylesheet' type='text/css'>
-
-  {# CSS #}
-  {% block part_css %}{% endblock %}
+  <title>Testament {{ appName }}</title>
   <style>
-      /*page brack pbs*/
+      @page {
+          margin: 22px;
+      }
+
       * {
-          overflow: visible !important;
-      }
-      /* FIX FLEX WKHTML */
-      .row {
-          display: -webkit-box; /* wkhtmltopdf uses this one */
-          display: flex;
-          -webkit-box-pack: center; /* wkhtmltopdf uses this one */
-          justify-content: center;
+          box-sizing: border-box;
       }
 
-      .row > div {
-          -webkit-box-flex: 1;
-          -webkit-flex: 1;
-          flex: 1;
-      }
-
-      .row > div:last-child {
-          margin-right: 0;
-      }
-      p, ul, li {
-          font-size: 15px;
-      }
-      label {
+      body {
+          margin: 0;
+          background: #f9f6f1;
+          color: #1f2937;
+          font-family: "DejaVu Sans", Arial, sans-serif;
           font-size: 12px;
-          color: #999;
+          line-height: 1.5;
       }
-      .dette {
-          background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 10px;
-      }
-      .dette .title {
-      }
-      .dette .info {
 
+      .page {
+          width: 100%;
+          max-width: 760px;
+          margin: 0 auto;
       }
-   </style>
+
+      .page-badge {
+          width: 180px;
+          margin: 0 auto 14px;
+          text-align: center;
+          padding: 6px 10px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #8f9779;
+          background: #fffdf9;
+          border: 1px solid #ede1d0;
+          border-radius: 999px;
+      }
+
+      .card {
+          background: #ffffff;
+          border: 1px solid #f0e5d6;
+          border-radius: 24px;
+          padding: 28px 28px 24px;
+          margin-bottom: 16px;
+      }
+
+      .main-card {
+          position: relative;
+          overflow: hidden;
+      }
+
+      .accent-bar {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 7px;
+          height: 100%;
+          background: #e7d6be;
+      }
+
+      .quote {
+          margin: 0 0 26px;
+          padding: 0 4px 20px;
+          text-align: center;
+          color: #6b7280;
+          font-size: 11px;
+          font-style: italic;
+          border-bottom: 1px solid #f1e8db;
+      }
+
+      .quote-ref {
+          margin-top: 6px;
+          color: #8f9779;
+          font-style: normal;
+          font-weight: 700;
+          opacity: 0.85;
+      }
+
+      .title-wrap {
+          text-align: center;
+          margin-bottom: 28px;
+      }
+
+      .title-wrap h1 {
+          margin: 0 0 8px;
+          color: #8f9779;
+          font-family: "Times New Roman", Georgia, serif;
+          font-size: 30px;
+          font-weight: 700;
+      }
+
+      .title-wrap p {
+          margin: 0;
+          color: #94a3b8;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+      }
+
+      .section {
+          margin-bottom: 24px;
+      }
+
+      .section:last-child {
+          margin-bottom: 0;
+      }
+
+      .section-heading {
+          margin: 0 0 10px;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #8f9779;
+      }
+
+      .section-marker {
+          display: inline-block;
+          color: #8f9779;
+          margin-right: 5px;
+      }
+
+      .field {
+          margin: 0 0 10px;
+      }
+
+      .field:last-child {
+          margin-bottom: 0;
+      }
+
+      .field-label {
+          margin: 0 0 5px;
+          color: #6b7280;
+          font-size: 12px;
+      }
+
+      .field-value {
+          margin: 0;
+          color: #111827;
+          font-weight: 600;
+          padding: 8px 10px;
+          background: #faf6f0;
+          border: 1px solid #efe3d3;
+          border-radius: 10px;
+      }
+
+      .fasting-box {
+          margin-top: 4px;
+          padding: 12px;
+          text-align: center;
+          background: #faf6f0;
+          border: 1px solid #ebddca;
+          border-radius: 12px;
+          color: #8f9779;
+          font-weight: 600;
+          font-style: italic;
+      }
+
+      .brand {
+          padding: 16px 0 0;
+          text-align: center;
+      }
+
+      .brand-name {
+          margin: 0;
+          color: #8f9779;
+          font-family: "Times New Roman", Georgia, serif;
+          font-size: 21px;
+          letter-spacing: 0.5px;
+      }
+
+      .brand-sub {
+          margin: 3px 0 0;
+          color: #a39b8e;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 2px;
+      }
+
+      .brand-logo {
+          width: 120px;
+          display: block;
+          margin: 14px auto 0;
+      }
+
+      .annex-title {
+          margin: 0 0 12px;
+          color: #8f9779;
+          font-family: "Times New Roman", Georgia, serif;
+          font-size: 24px;
+          text-align: center;
+      }
+
+      .debt-group {
+          margin-bottom: 18px;
+      }
+
+      .debt-group:last-child {
+          margin-bottom: 0;
+      }
+
+      .debt-group h3 {
+          margin: 0 0 10px;
+          color: #8f9779;
+          font-size: 13px;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+      }
+
+      .debt-card {
+          background: #fffcf8;
+          border: 1px solid #f0e4d4;
+          border-radius: 12px;
+          padding: 11px 12px;
+          margin-bottom: 8px;
+      }
+
+      .debt-card:last-child {
+          margin-bottom: 0;
+      }
+
+      .debt-line {
+          margin: 0 0 4px;
+          color: #6b7280;
+      }
+
+      .debt-line:last-child {
+          margin-bottom: 0;
+      }
+
+      .debt-line strong {
+          color: #111827;
+      }
+
+      .page-break {
+          page-break-before: always;
+      }
+  </style>
 </head>
+<body>
+<div class="page">
+  <div class="page-badge">Aperçu du testament</div>
 
+  <div class="card main-card">
+    <div class="accent-bar"></div>
+    <p class="quote">
+      "Le Très Haut a dit : On vous a prescrit, quand la mort est proche de l'un de vous et s'il laisse des biens, de faire un testament en règle en faveur de ses père et mère et de ses plus proches. C'est un devoir pour les pieux."
+      <span class="quote-ref">(Coran, 2:180)</span>
+    </p>
 
-<body class="export-pdf fixed-left widescreen coaching {% block body_class %}{% endblock %}" style="background: #fdf3e9; padding: 20px">
-<div id="wrapper" class="enlarged forced">
-  <div class="content-page">
-    <div class="content">
-      <p style="background: #fff; padding: 15px; border-radius: 15px; color: #777; font-size: 14px; font-style: italic">Le Très Haut a dit: On vous a prescrit, quand la mort est proche de l'un de vous et s'il laisse des biens, de faire un testament en règle en faveur de ses père et mère et de ses plus proches. C'est un devoir pour les pieux.(Coran, :80)</p>
+    <div class="title-wrap">
+      <h1>Testament de {{ testament.createdBy.fullname }}</h1>
+      <p>Généré le {{ dateString }}</p>
+    </div>
 
-
-
-      <div style="background: #fff; padding: 15px; border-radius: 15px">
-        <h1>Testament de {{ testament.createdBy.fullname }}  <div style="font-weight: bold; color: #777; margin-bottom: 15px; font-size: 14px">Généré le {{ dateString }}</div></h1>
-
-
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Je souhaite être enterré(e) selon les rites musulmans dans le pays et  ou ville suivante :
-          </div>
-          <div class="rep">
-            {{ testament.location }}
-          </div>
-        </div>
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Je souhaite que ma toilette mortuaire soit faite par :
-          </div>
-          <div class="rep">
-            {{ testament.toilette }}
-          </div>
-        </div>
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Je souhaite que mon enterrement se tienne sans aucune innovation et dans les conditions suivantes :
-          </div>
-          <div class="rep">
-            {{ testament.family }}
-          </div>
-        </div>
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Je souhaite que l’on rembourse mes dettes de la manière suivante :
-          </div>
-          <div class="rep">
-            {{ testament.fixe }}
-          </div>
-        </div>
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Je souhaite que l’argent prêté et qui vous sera rendu soit utilisé de la manière suivante :
-          </div>
-          <div class="rep">
-            {{ testament.goods }}
-          </div>
-        </div>
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Je souhaite laisser les recommandations suivantes
-          </div>
-          <div class="rep">
-            {{ testament.lastwill }}
-          </div>
-        </div>
-        <div class="block-rep" style="margin-bottom: 30px">
-          <div class="label" style="color: #777; font-size: 14px; font-weight: bold; margin-bottom: 10px">
-            Jours de jeûn à rattraper
-          </div>
-          <div class="rep">
-            {{ jeunText }}
-          </div>
-        </div>
-        <div  style="display: block; width: 200px; margin: auto">
-          <img src="{{ logoElhSrc }}" style="display: block; width: 200px; margin: 20px auto">
-        </div>
+    <div class="section">
+      <h2 class="section-heading"><span class="section-marker">&#9679;</span>Rites funéraires</h2>
+      <div class="field">
+        <p class="field-label">Je souhaite être enterré(e) selon les rites musulmans dans le pays et ou ville suivante :</p>
+        <p class="field-value">{{ testament.location }}</p>
       </div>
-      {% if jeds is not empty %}
-        <div style="margin-bottom: 20px">
-          <h2>On me doit</h2>
-          {% for jed in jeds %}
-            <div class="dette">
-              <div class="title">Preteur : <strong>{{ jed.cardOtherName }} </strong>| Tel : </span>{{ jed.cardOtherTel }}</div>
-              <div class="title">Emprunteur : {{ jed.createdByName }}</div>
-              <div class="info"><span>Montant initial : </span>{{ jed.amount }}€</div>
-              <div class="info"><span>Montant restant : </span>{{ jed.remainingAmount }}€</div>
+      <div class="field">
+        <p class="field-label">Je souhaite que ma toilette mortuaire soit faite par :</p>
+        <p class="field-value">{{ testament.toilette }}</p>
+      </div>
+      <div class="field">
+        <p class="field-label">Je souhaite que mon enterrement se tienne sans aucune innovation et dans les conditions suivantes :</p>
+        <p class="field-value">{{ testament.family }}</p>
+      </div>
+    </div>
 
-              <div class="info"><span>Date : </span>{{ jed.dateDisplay }}</div>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-      {% if onms is not empty %}
-        <div style="margin-bottom: 20px">
-          <h2>Je dois</h2>
-          {% for onm in onms %}
-            <div class="dette">
-              <div class="title">Emprunteur : <strong>{{ onm.cardOtherName }} </strong>| Tel : </span>{{ onm.cardOtherTel }}</div>
-              <div class="title">Preteur : {{ onm.createdByName }}</div>
-              <div class="info"><span>Montant initial : </span>{{ onm.amount }}€</div>
-              <div class="info"><span>Montant restant : </span>{{ onm.remainingAmount }}€</div>
+    <div class="section">
+      <h2 class="section-heading"><span class="section-marker">&#9679;</span>Dettes et engagements</h2>
+      <div class="field">
+        <p class="field-label">Je souhaite que l’on rembourse mes dettes de la manière suivante :</p>
+        <p class="field-value">{{ testament.fixe }}</p>
+      </div>
+      <div class="field">
+        <p class="field-label">Je souhaite que l’argent prêté et qui vous sera rendu soit utilisé de la manière suivante :</p>
+        <p class="field-value">{{ testament.goods }}</p>
+      </div>
+      <div class="field">
+        <p class="field-label">Je souhaite laisser les recommandations suivantes :</p>
+        <p class="field-value">{{ testament.lastwill }}</p>
+      </div>
+    </div>
 
-              <div class="info"><span>Date : </span>{{ onm.dateDisplay }}</div>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
+    <div class="section">
+      <h2 class="section-heading"><span class="section-marker">&#9679;</span>Jours de jeûne</h2>
+      <div class="fasting-box">{{ jeunText }}</div>
+    </div>
 
-
-      {% if amanas is not empty %}
-        <div style="margin-bottom: 20px">
-          <h2>Amanas en cours</h2>
-          {% for amana in amanas %}
-            <div class="dette">
-              <div class="title">Entre : <strong>{{ amana.cardOtherName }} </strong>| Tel : </span>{{ amana.cardOtherTel }}</div>
-              <div class="title">et : {{ amana.createdByName }}</div>
-              <div class="info"><span>Date : </span>{{ amana.dateDisplay }}</div>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
-
+    <div class="brand">
+      <p class="brand-name">MUSLIM CONNECT</p>
+      <p class="brand-sub">Document personnel</p>
+      <img class="brand-logo" src="{{ logoElhSrc }}" alt="Muslim Connect">
     </div>
   </div>
-</div>
+
+  {% if jeds is not empty or onms is not empty or amanas is not empty %}
+    <div class="page-break"></div>
+    <div class="page-badge">Annexes des dettes</div>
+
+    <div class="card">
+      <h2 class="annex-title">Détails financiers</h2>
+
+      {% if jeds is not empty %}
+        <div class="debt-group">
+          <h3>On me doit</h3>
+          {% for jed in jeds %}
+            <div class="debt-card">
+              <p class="debt-line">Prêteur : <strong>{{ jed.cardOtherName }}</strong> | Tél : <strong>{{ jed.cardOtherTel }}</strong></p>
+              <p class="debt-line">Emprunteur : <strong>{{ jed.createdByName }}</strong></p>
+              <p class="debt-line">Montant initial : <strong>{{ jed.amount }}€</strong></p>
+              <p class="debt-line">Montant restant : <strong>{{ jed.remainingAmount }}€</strong></p>
+              <p class="debt-line">Date : <strong>{{ jed.dateDisplay }}</strong></p>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if onms is not empty %}
+        <div class="debt-group">
+          <h3>Je dois</h3>
+          {% for onm in onms %}
+            <div class="debt-card">
+              <p class="debt-line">Emprunteur : <strong>{{ onm.cardOtherName }}</strong> | Tél : <strong>{{ onm.cardOtherTel }}</strong></p>
+              <p class="debt-line">Prêteur : <strong>{{ onm.createdByName }}</strong></p>
+              <p class="debt-line">Montant initial : <strong>{{ onm.amount }}€</strong></p>
+              <p class="debt-line">Montant restant : <strong>{{ onm.remainingAmount }}€</strong></p>
+              <p class="debt-line">Date : <strong>{{ onm.dateDisplay }}</strong></p>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if amanas is not empty %}
+        <div class="debt-group">
+          <h3>Amanas en cours</h3>
+          {% for amana in amanas %}
+            <div class="debt-card">
+              <p class="debt-line">Entre : <strong>{{ amana.cardOtherName }}</strong> | Tél : <strong>{{ amana.cardOtherTel }}</strong></p>
+              <p class="debt-line">Et : <strong>{{ amana.createdByName }}</strong></p>
+              <p class="debt-line">Date : <strong>{{ amana.dateDisplay }}</strong></p>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
 </div>
 </body>
 </html>
-

@@ -10,6 +10,7 @@ use App\Entity\Coaching\CustomerManager;
 use App\Entity\Invitation;
 use App\Entity\Mail;
 use App\Entity\MosqueNotifDece;
+use App\Entity\NotifToSend;
 use App\Entity\Notification;
 use App\Entity\Obligation;
 use App\Entity\Pardon;
@@ -57,6 +58,7 @@ class NotificationService {
             $title = "Demande de service à votre pompe funèbre";
             $message =  "Vous êtes contacté suite au décès de ".$fullname;
             $data['view'] = "pompe_noitif_view";
+            $this->createSentNotif($to, $title, $message, $data['view'], 'pompe', $data);
             $this->fcmNotificationService->sendFcmDefaultNotification($to, $title, $message, $data);
             //mail  {nom_dece} , {prenom_dece} , {lieu_dece}
             $lieu = 'lieu non défini';
@@ -88,6 +90,7 @@ class NotificationService {
                 $message =  "Le décès de  ".$fullname." à ".$lieu." vient d'être annoncé";
                 $data['view'] = "mosque_notif_view";
                 $data['mosque'] = $this->mosqueUI->getMosque($mosqueNotifDece->getMosque());
+                $this->createSentNotif($to, $title, $message, $data['view'], 'mosque', $data);
                 $this->fcmNotificationService->sendFcmDefaultNotification($to, $title, $message, $data);
                 $variables = [
                     'prenom_dece' => $dece->getFirstname(),
@@ -107,6 +110,7 @@ class NotificationService {
             $title = "Demande de pardon pour ".$pardon->getFirstname()." ".$pardon->getLastname();
         $message =  $userName. "vous envoie une demande de pardon";
         $data['view'] = "pardon_view";
+        $this->createSentNotif($userTarget, $title, $message, $data['view'], 'pardon', $data);
         $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $data);
     }
 
@@ -136,6 +140,7 @@ class NotificationService {
             'userUI' => $userUi,
             'image' => $userUi['photo']
         ];
+        $this->createSentNotif($userTarget, $title, $message, $datas['view'], 'relation', $datas);
         $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $datas);
     }
 
@@ -151,6 +156,7 @@ class NotificationService {
         $message =  $userName. " vous envoie une carte de ".$carteLabel;
         $data['view'] = "carte_list_view";
         $data['carte'] = json_encode($this->carteUI->getCarte($carteShare->getCarte()));
+        $this->createSentNotif($userTarget, $title, $message, $data['view'], 'carte', $data);
         $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $data);
     }
 
@@ -188,6 +194,7 @@ class NotificationService {
 
         // Never let a notif failure break the save
         try {
+            $this->createSentNotif($relatedTo, $title, $message, $payload['view'], 'obligation', $payload);
             $this->fcmNotificationService->sendFcmDefaultNotification($relatedTo, $title, $message, $payload);
         } catch (\Throwable $e) {
             // Optional: log and swallow
@@ -207,6 +214,7 @@ class NotificationService {
         $titleMessage = $this->getTitleMessageForObligationType($obligation->getType(), $userName, $otherName);
         $data['view'] = "obligation_list_view";
         $data['type'] = $obligation->getType();
+        $this->createSentNotif($createdBy, $titleMessage['title'], $titleMessage['message'], $data['view'], 'obligation_echeance', $data);
         $this->fcmNotificationService->sendFcmDefaultNotification($createdBy, $titleMessage['title'], $titleMessage['message'], $data);
         if(!is_null($obligation->getRelatedTo())) {
             $type = $obligation->getType();
@@ -217,6 +225,7 @@ class NotificationService {
             }
             $data['type'] = $type;
             $titleMessage = $this->getTitleMessageForObligationType($type, $userName, $otherName);
+            $this->createSentNotif($obligation->getRelatedTo(), $titleMessage['title'], $titleMessage['message'], $data['view'], 'obligation_echeance', $data);
             $this->fcmNotificationService->sendFcmDefaultNotification($obligation->getRelatedTo(), $titleMessage['title'], $titleMessage['message'],$data);
         }
     }
@@ -273,7 +282,30 @@ class NotificationService {
             $data['view'] = "obligation_list_view";
             $data['type'] = $type;
             $data['tab'] = 'refund';
+            $this->createSentNotif($userToNotif, $title, $message, $data['view'], 'obligation_refund', $data);
             $this->fcmNotificationService->sendFcmDefaultNotification($userToNotif, $title, $message, $data);
+        }
+    }
+
+    private function createSentNotif(User $user, string $title, string $message, ?string $view = null, ?string $type = 'fcm', ?array $data = null): void
+    {
+        try {
+            $notif = new NotifToSend();
+            $notif->setUser($user);
+            $notif->setTitle($title);
+            $notif->setMessage($message);
+            $notif->setSendAt(new \DateTime());
+            $notif->setType($type ?? 'fcm');
+            $notif->setView($view);
+            if (!is_null($data)) {
+                $notif->setDatas(json_encode($data, JSON_UNESCAPED_UNICODE));
+            }
+            $notif->setStatus('sent');
+            $notif->setIsRead(false);
+            $this->em->persist($notif);
+            $this->em->flush();
+        } catch (\Throwable $e) {
+            // never block main flow if notif persistence fails
         }
     }
 
