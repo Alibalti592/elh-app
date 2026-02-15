@@ -14,8 +14,17 @@ class AdminFeedbackController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     public function index(UserFeedbackRepository $userFeedbackRepository): Response
     {
+        $feedbacks = [];
+        $dbError = null;
+        try {
+            $feedbacks = $userFeedbackRepository->findRecent();
+        } catch (\Throwable $e) {
+            $dbError = 'Module avis non initialisé en base. Exécute la migration doctrine.';
+        }
+
         return $this->render('admin/modules/feedback/list.twig', [
-            'feedbacks' => $userFeedbackRepository->findRecent(),
+            'feedbacks' => $feedbacks,
+            'dbError' => $dbError,
         ]);
     }
 }
