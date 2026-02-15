@@ -129,17 +129,17 @@
 
       .section-icon {
           display: inline-block;
-          width: 19px;
-          height: 19px;
-          line-height: 18px;
-          text-align: center;
-          margin-right: 7px;
-          vertical-align: -3px;
-          color: #8f9779;
-          border: 1px solid #d7c3aa;
-          border-radius: 999px;
-          font-size: 11px;
-          font-weight: 700;
+          width: 16px;
+          height: 16px;
+          margin-right: 8px;
+          vertical-align: -2px;
+      }
+
+      .section-icon svg {
+          display: block;
+          width: 16px;
+          height: 16px;
+          fill: #8f9779;
       }
 
       .field {
@@ -279,7 +279,11 @@
       {% if hasRitesSection %}
         <div class="section">
           <h2 class="section-heading">
-            <span class="section-icon" aria-hidden="true">&#10022;</span>
+            <span class="section-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M9.69 18.933a.75.75 0 0 0 .62 0 16.06 16.06 0 0 0 3.79-2.42c2.637-2.32 4.4-5.25 4.4-8.263 0-4.42-3.58-8-8-8s-8 3.58-8 8c0 3.013 1.763 5.944 4.4 8.263a16.06 16.06 0 0 0 3.79 2.42ZM10 10.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clip-rule="evenodd"/>
+              </svg>
+            </span>
             Rites funéraires
           </h2>
           {% if location != '' %}
@@ -306,7 +310,11 @@
       {% if hasDebtSection %}
         <div class="section">
           <h2 class="section-heading">
-            <span class="section-icon" aria-hidden="true">&#164;</span>
+            <span class="section-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-12a.75.75 0 0 0-1.5 0v.279c-1.158.217-2 1.126-2 2.221 0 1.281 1.138 2.25 2.5 2.25 1.024 0 1.75.67 1.75 1.5s-.726 1.5-1.75 1.5S8 13.08 8 12.25a.75.75 0 0 0-1.5 0c0 1.095.842 2.004 2 2.221V15a.75.75 0 0 0 1.5 0v-.279c1.158-.217 2-1.126 2-2.221 0-1.281-1.138-2.25-2.5-2.25-1.024 0-1.75-.67-1.75-1.5s.726-1.5 1.75-1.5 1.75.67 1.75 1.5a.75.75 0 0 0 1.5 0c0-1.095-.842-2.004-2-2.221V6Z" clip-rule="evenodd"/>
+              </svg>
+            </span>
             Dettes et engagements
           </h2>
           {% if fixe != '' %}
@@ -333,7 +341,11 @@
       {% if hasFastingSection %}
         <div class="section">
           <h2 class="section-heading">
-            <span class="section-icon" aria-hidden="true">&#9789;</span>
+            <span class="section-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fill-rule="evenodd" d="M9.598 1.591a.75.75 0 0 1 .638.166 8.25 8.25 0 0 0 9.007 13.395.75.75 0 0 1 .814 1.235A9.75 9.75 0 1 1 8.363.943a.75.75 0 0 1 1.235.648Z" clip-rule="evenodd"/>
+              </svg>
+            </span>
             Jours de jeûne
           </h2>
           <div class="fasting-box">{{ jeunTextValue }}</div>
@@ -349,8 +361,8 @@
             <h3>On me doit</h3>
             {% for jed in jeds %}
               <div class="debt-card">
-                <p class="debt-line">Prêteur : <strong>{{ jed.cardOtherName }}</strong> | Tél : <strong>{{ jed.cardOtherTel }}</strong></p>
-                <p class="debt-line">Emprunteur : <strong>{{ jed.createdByName }}</strong></p>
+                <p class="debt-line">Prêteur : <strong>{{ testament.createdBy.fullname }}</strong></p>
+                <p class="debt-line">Emprunteur : <strong>{{ jed.cardOtherName }}</strong> | Tél : <strong>{{ jed.cardOtherTel }}</strong></p>
                 <p class="debt-line">Montant initial : <strong>{{ jed.amount }}€</strong></p>
                 <p class="debt-line">Montant restant : <strong>{{ jed.remainingAmount }}€</strong></p>
                 <p class="debt-line">Date : <strong>{{ jed.dateDisplay }}</strong></p>
@@ -364,8 +376,8 @@
             <h3>Je dois</h3>
             {% for onm in onms %}
               <div class="debt-card">
-                <p class="debt-line">Emprunteur : <strong>{{ onm.cardOtherName }}</strong> | Tél : <strong>{{ onm.cardOtherTel }}</strong></p>
-                <p class="debt-line">Prêteur : <strong>{{ onm.createdByName }}</strong></p>
+                <p class="debt-line">Emprunteur : <strong>{{ testament.createdBy.fullname }}</strong></p>
+                <p class="debt-line">Prêteur : <strong>{{ onm.cardOtherName }}</strong> | Tél : <strong>{{ onm.cardOtherTel }}</strong></p>
                 <p class="debt-line">Montant initial : <strong>{{ onm.amount }}€</strong></p>
                 <p class="debt-line">Montant restant : <strong>{{ onm.remainingAmount }}€</strong></p>
                 <p class="debt-line">Date : <strong>{{ onm.dateDisplay }}</strong></p>
@@ -379,8 +391,8 @@
             <h3>Amanas en cours</h3>
             {% for amana in amanas %}
               <div class="debt-card">
-                <p class="debt-line">Entre : <strong>{{ amana.cardOtherName }}</strong> | Tél : <strong>{{ amana.cardOtherTel }}</strong></p>
-                <p class="debt-line">Et : <strong>{{ amana.createdByName }}</strong></p>
+                <p class="debt-line">Entre : <strong>{{ testament.createdBy.fullname }}</strong></p>
+                <p class="debt-line">Et : <strong>{{ amana.cardOtherName }}</strong> | Tél : <strong>{{ amana.cardOtherTel }}</strong></p>
                 <p class="debt-line">Date : <strong>{{ amana.dateDisplay }}</strong></p>
               </div>
             {% endfor %}
