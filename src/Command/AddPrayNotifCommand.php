@@ -56,10 +56,8 @@ class AddPrayNotifCommand extends Command
                 $this->entityManager->getRepository(NotifToSend::class)->deletePrayNotifOfUser($currentUser);
                 foreach ($praytimesUI as $praytimeUI) {
                     if($praytimeUI['isNotified']) {
-                        $sendAt = new \DateTime();
-                        $sendAt->setTimestamp($praytimeUI['timestamp']);
-                        $now = new \DateTime();
-                        if ($sendAt > $now) {
+                        $sendTimestamp = ((int) $praytimeUI['timestamp']) - (60 * 15);
+                        if ($sendTimestamp > time()) {
                             $notifToSend = new NotifToSend();
                             $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
                             $this->entityManager->persist($notifToSend);

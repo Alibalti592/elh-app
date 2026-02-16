@@ -163,15 +163,15 @@ class PriereController extends AbstractController
             if($sendNotif) {
                 $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
                 $praytimeUI = null;
-                $timestamp = null;
+                $sendTimestamp = null;
                 foreach ($praytimesUI as $pray) {
                     if($pray['key'] === $prayKey) {
-                        $timestamp = $pray['timestamp'] - 60*15 ; //-15min
+                        $sendTimestamp = ((int) $pray['timestamp']) - (60 * 15);
                         $praytimeUI = $pray;
                         break;
                     }
                 }
-                if(!is_null($praytimeUI) && $timestamp > time()) {
+                if(!is_null($praytimeUI) && !is_null($sendTimestamp) && $sendTimestamp > time()) {
                     $notifToSend = new NotifToSend();
                     $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
                     $this->entityManager->persist($notifToSend);

@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: NotifToSendRepository::class)]
 class NotifToSend
 {
+    private const PRAY_REMINDER_OFFSET_SECONDS = 60 * 15;
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -71,7 +72,7 @@ class NotifToSend
     {
         $sendAt = new \DateTime();
         $sendAt->setTimezone(new \DateTimeZone("Europe/Paris"));
-        $timestamp = (int) $praytimeUI['timestamp'];
+        $timestamp = (int) $praytimeUI['timestamp'] - self::PRAY_REMINDER_OFFSET_SECONDS;
         $sendAt->setTimestamp($timestamp);
         $this->setUser($currentUser);
         $this->setTitle("Rappel de prière");
