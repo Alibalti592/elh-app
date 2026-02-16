@@ -22,7 +22,7 @@ class FcmToken
     /**
      * @var string
      */
-    #[ORM\Column(name: 'fcmToken', type: 'string', length: 255)]
+    #[ORM\Column(name: 'fcmToken', type: 'string', length: 255, unique: true)]
     private $fcmToken;
 
     #[ORM\ManyToOne(targetEntity: 'App\Entity\User')]
