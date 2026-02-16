@@ -29,7 +29,6 @@ class NotifToSendRepository extends ServiceEntityRepository
     $qb = $this->createQueryBuilder('a');
     $now = new \DateTime('now');
     $now->setTimezone(new \DateTimeZone('Europe/Paris'));
-    $now->modify('+18 minutes');
 
     $qb
         ->andWhere('a.sendAt <= :now')

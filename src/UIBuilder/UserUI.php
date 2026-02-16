@@ -112,10 +112,8 @@ class UserUI {
                 $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($prayNotification->getUser());
                 foreach ($praytimesUI as $praytimeUI) {
                     if($praytimeUI['isNotified']) {
-                        $sendAt = new \DateTime();
-                        $sendAt->setTimestamp($praytimeUI['timestamp']);
-                        $now = new \DateTime();
-                        if ($sendAt > $now) {
+                        $sendTimestamp = ((int) $praytimeUI['timestamp']) - (60 * 15);
+                        if ($sendTimestamp > time()) {
                             $notifToSend = new NotifToSend();
                             $notifToSend->setForPrayFromUI($user, $praytimeUI);
                             $this->entityManager->persist($notifToSend);
