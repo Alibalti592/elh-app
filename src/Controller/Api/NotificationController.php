@@ -10,6 +10,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 
 class NotificationController extends AbstractController {
@@ -38,41 +39,57 @@ class NotificationController extends AbstractController {
     #[Route('/notification/post-fcm-token', methods: ['POST'])]
     public function saveFCMToken(Request $request) {
         $user = $this->getUser();
-        $data = json_decode($request->getContent());
-        $fcmToken = $data->fcmToken;
-        $deviceId = $data->deviceId ?? null;
-        //find old tokens, keep 4 max !! (v1 pbs ajout)
+        if (!$user) {
+            return new JsonResponse(['error' => 'Unauthorized'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true) ?? [];
+        $fcmToken = trim((string)($data['fcmToken'] ?? ''));
+        $deviceId = trim((string)($data['deviceId'] ?? ''));
+        if($deviceId === '') {
+            $deviceId = null;
+        }
+        if($fcmToken === '') {
+            return new JsonResponse(['error' => 'Missing fcmToken'], Response::HTTP_BAD_REQUEST);
+        }
+
+        // one FCM token must belong to one user only
+        $sameValueTokens = $this->entityManager->getRepository(FcmToken::class)->findBy([
+            'fcmToken' => $fcmToken,
+        ]);
+        foreach ($sameValueTokens as $sameValueToken) {
+            $this->entityManager->remove($sameValueToken);
+        }
+        $this->entityManager->flush();
+
+        $newFCMToken = new FcmToken();
+        $newFCMToken->setUser($user);
+        $newFCMToken->setFcmToken($fcmToken);
+        $newFCMToken->setDeviceId($deviceId);
+        $this->entityManager->persist($newFCMToken);
+        $this->entityManager->flush();
+
+        // find old tokens, keep 4 max and keep one token by device id for this user
         $allTokens = $this->entityManager->getRepository(FcmToken::class)->findAllTokensOfUser($user);
         $numToken = 0;
         /** @var FcmToken $fToken */
         foreach ($allTokens as $fToken) {
+            $isCurrentToken = $fToken->getId() === $newFCMToken->getId();
             $toDelete = false;
-            if(!is_null($deviceId) && $deviceId != '' && $fToken->getDeviceId() == $deviceId) {
+            if(!$isCurrentToken && !is_null($deviceId) && $fToken->getDeviceId() === $deviceId) {
                 $toDelete = true;
             }
-            if($numToken > 3 || $toDelete) {
-                $this->entityManager->remove($fToken);
+            if(!$isCurrentToken && $numToken > 3) {
+                $toDelete = true;
             }
-            $numToken++;
+            if($toDelete) {
+                $this->entityManager->remove($fToken);
+            } else {
+                $numToken++;
+            }
         }
         $this->entityManager->flush();
-        /** @var FcmToken $alreadyExistToken */
-        $alreadyExistToken = $this->entityManager->getRepository(FcmToken::class)->findOneBy([
-            'fcmToken' => $fcmToken,
-            'user' => $user
-        ]);
-        if(is_null($alreadyExistToken)) {
-            $newFCMToken = new FcmToken();
-            $newFCMToken->setUser($user);
-            $newFCMToken->setFcmToken($fcmToken);
-            $newFCMToken->setDeviceId($deviceId);
-            $this->entityManager->persist($newFCMToken);
-            $this->entityManager->flush();
-        } elseif (!is_null($deviceId) && is_null($alreadyExistToken->getDeviceId())) {
-            $alreadyExistToken->setDeviceId($deviceId);
-            $this->entityManager->persist($alreadyExistToken);
-            $this->entityManager->flush();
-        }
+
         return new JsonResponse();
     }
 
