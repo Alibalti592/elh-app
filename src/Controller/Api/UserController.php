@@ -68,6 +68,13 @@ class UserController extends AbstractController
             $user->setLastname($userRegistration->lastname);
             $user->setPhone($userRegistration->phone);
             $user->setPhonePrefix($userRegistration->phonePrefix);
+
+            // Google signup should bypass OTP email verification flow.
+            if (isset($userRegistration->isGoogleSignup) && $userRegistration->isGoogleSignup === true) {
+                $user->setStatus('active');
+                $user->setOtpCode(null);
+                $user->setOtpExpiresAt(null);
+            }
             $this->entityManager->persist($user);
             $this->entityManager->flush();
             //check si invitation
