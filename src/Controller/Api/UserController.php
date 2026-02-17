@@ -76,6 +76,9 @@ class UserController extends AbstractController
             if (isset($userRegistration->isGoogleSignup) && $userRegistration->isGoogleSignup === true) {
                 $authProvider = 'google';
             }
+            if (isset($userRegistration->isAppleSignup) && $userRegistration->isAppleSignup === true) {
+                $authProvider = 'apple';
+            }
             $user->setAuthProvider($authProvider);
 
             // Social signup should bypass OTP email verification flow.
@@ -271,9 +274,19 @@ class UserController extends AbstractController
 #[Route('/test-api/sign-in-with-google-flutter', name: 'app_api_user_registergoogleflutter_testapi', methods: ['POST'])]
 public function registerGoogleFlutter(Request $request): JsonResponse
 {
-    $data = json_decode($request->getContent(), true);
-    $email = $data['email'] ?? null;
+    return $this->signInWithProviderFlutter($request, 'google', 'Google');
+}
 
+#[Route('/test-api/sign-in-with-apple-flutter', name: 'app_api_user_registerappleflutter_testapi', methods: ['POST'])]
+public function registerAppleFlutter(Request $request): JsonResponse
+{
+    return $this->signInWithProviderFlutter($request, 'apple', 'Apple');
+}
+
+private function signInWithProviderFlutter(Request $request, string $expectedProvider, string $providerLabel): JsonResponse
+{
+    $data = json_decode($request->getContent(), true);
+    $email = isset($data['email']) ? trim((string) $data['email']) : null;
     $jsonResponse = new JsonResponse();
 
     if (!$email) {
@@ -291,44 +304,59 @@ public function registerGoogleFlutter(Request $request): JsonResponse
     }
 
     $authProvider = $user->getAuthProvider();
-    if ($authProvider !== 'google') {
-        $providerLabel = $authProvider === 'apple' ? 'Apple' : 'email et mot de passe';
+    if ($authProvider !== $expectedProvider) {
+        $existingProviderLabel = $authProvider === 'google'
+            ? 'Google'
+            : ($authProvider === 'apple' ? 'Apple' : 'email et mot de passe');
+
         $jsonResponse->setStatusCode(409);
         $jsonResponse->setData([
-            'message' => "Ce compte existe déjà avec $providerLabel.",
+            'message' => "Ce compte existe déjà avec $existingProviderLabel.",
             'authProvider' => $authProvider,
         ]);
         return $jsonResponse;
     }
 
-    // optional: block login for deleted/disabled users (you already use UserChecker for other flows)
     if (!is_null($user->getDeletedAt()) || !$user->isEnabled()) {
         $jsonResponse->setStatusCode(403);
         $jsonResponse->setData(['message' => "Compte bloqué"]);
         return $jsonResponse;
     }
 
-    try {
-        // Reuse your existing CsrfTokenService which already creates JWT for a user in your codebase
-        $tokens = $this->csrfTokenService->createNewJWT($user);
+    // Safety net for legacy social accounts created before provider-status rules.
+    // A Google/Apple login should never stay "unactive" and should not keep OTP.
+    $updated = false;
+    if ($authProvider !== 'email' && $user->getStatus() !== 'active') {
+        $user->setStatus('active');
+        $updated = true;
+    }
+    if ($authProvider !== 'email' && (!is_null($user->getOtpCode()) || !is_null($user->getOtpExpiresAt()))) {
+        $user->setOtpCode(null);
+        $user->setOtpExpiresAt(null);
+        $updated = true;
+    }
+    if ($updated) {
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+        $this->userUI->clearUserUI($user);
+    }
 
-        // createNewJWT seems to return an array (you used ['newToken'] previously). Be flexible:
+    try {
+        $tokens = $this->csrfTokenService->createNewJWT($user);
         $tokenString = $tokens['newToken'] ?? $tokens['token'] ?? null;
         $refreshTokenString = $tokens['refreshToken'] ?? $tokens['refresh_token'] ?? null;
 
         $responseData = [
             'token' => $tokenString,
-            // include refresh token if present
             'refreshToken' => $refreshTokenString,
             'authProvider' => $authProvider,
-            // include basic user UI payload (optional)
             'user' => $this->userUI->getUserProfilUI($user),
         ];
 
         $jsonResponse->setData($responseData);
         return $jsonResponse;
     } catch (\Exception $e) {
-        $this->logger->error('RegisterGoogleFlutter error: '.$e->getMessage());
+        $this->logger->error(sprintf('Register%sFlutter error: %s', $providerLabel, $e->getMessage()));
         $jsonResponse->setStatusCode(500);
         $jsonResponse->setData(['message' => "Une erreur s'est produite, merci de réessayer plus tard."]);
         return $jsonResponse;
