@@ -53,7 +53,13 @@ class GoogleAuthController extends AbstractController
         }
 
         $email = $payload['email'];
-        $name  = $payload['name'] ?? explode('@', $email)[0];
+        $fullName  = trim((string) ($payload['name'] ?? ''));
+        if ($fullName === '') {
+            $fullName = explode('@', $email)[0];
+        }
+        $nameParts = preg_split('/\s+/', $fullName) ?: [];
+        $firstname = $nameParts[0] ?? 'Utilisateur';
+        $lastname = count($nameParts) > 1 ? implode(' ', array_slice($nameParts, 1)) : 'Google';
 
         // 5) Trouver ou créer l’utilisateur
         $repo = $em->getRepository(User::class);
@@ -62,14 +68,25 @@ class GoogleAuthController extends AbstractController
         if (!$user) {
             $user = new User();
             $user->setEmail($email);
-            $user->setName($name);
+            $user->setFirstname($firstname);
+            $user->setLastname($lastname);
             $user->setRoles(['ROLE_USER']);
+            $user->setAuthProvider('google');
+            $user->setStatus('active');
+            $user->setOtpCode(null);
+            $user->setOtpExpiresAt(null);
             $em->persist($user);
         } else {
-            // Optionnel: mettre à jour le nom si vide
-            if (!$user->getName() && $name) {
-                $user->setName($name);
+            if ($user->getFirstname() === null || trim($user->getFirstname()) === '') {
+                $user->setFirstname($firstname);
             }
+            if ($user->getLastname() === null || trim($user->getLastname()) === '') {
+                $user->setLastname($lastname);
+            }
+            $user->setAuthProvider('google');
+            $user->setStatus('active');
+            $user->setOtpCode(null);
+            $user->setOtpExpiresAt(null);
         }
 
         // 6) Sauvegarde
@@ -82,7 +99,7 @@ class GoogleAuthController extends AbstractController
             'token' => $token,
             'user'  => [
                 'email' => $user->getEmail(),
-                'name'  => $user->getName(),
+                'name'  => $user->getFullname(),
             ],
         ]);
     }

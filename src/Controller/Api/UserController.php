@@ -68,9 +68,18 @@ class UserController extends AbstractController
             $user->setLastname($userRegistration->lastname);
             $user->setPhone($userRegistration->phone);
             $user->setPhonePrefix($userRegistration->phonePrefix);
-
-            // Google signup should bypass OTP email verification flow.
+            $authProvider = 'email';
+            if (isset($userRegistration->authProvider) && in_array($userRegistration->authProvider, ['email', 'google', 'apple'], true)) {
+                $authProvider = $userRegistration->authProvider;
+            }
+            // Backward compatibility with older Flutter payloads
             if (isset($userRegistration->isGoogleSignup) && $userRegistration->isGoogleSignup === true) {
+                $authProvider = 'google';
+            }
+            $user->setAuthProvider($authProvider);
+
+            // Social signup should bypass OTP email verification flow.
+            if ($authProvider !== 'email') {
                 $user->setStatus('active');
                 $user->setOtpCode(null);
                 $user->setOtpExpiresAt(null);
@@ -281,6 +290,17 @@ public function registerGoogleFlutter(Request $request): JsonResponse
         return $jsonResponse;
     }
 
+    $authProvider = $user->getAuthProvider();
+    if ($authProvider !== 'google') {
+        $providerLabel = $authProvider === 'apple' ? 'Apple' : 'email et mot de passe';
+        $jsonResponse->setStatusCode(409);
+        $jsonResponse->setData([
+            'message' => "Ce compte existe déjà avec $providerLabel.",
+            'authProvider' => $authProvider,
+        ]);
+        return $jsonResponse;
+    }
+
     // optional: block login for deleted/disabled users (you already use UserChecker for other flows)
     if (!is_null($user->getDeletedAt()) || !$user->isEnabled()) {
         $jsonResponse->setStatusCode(403);
@@ -300,6 +320,7 @@ public function registerGoogleFlutter(Request $request): JsonResponse
             'token' => $tokenString,
             // include refresh token if present
             'refreshToken' => $refreshTokenString,
+            'authProvider' => $authProvider,
             // include basic user UI payload (optional)
             'user' => $this->userUI->getUserProfilUI($user),
         ];

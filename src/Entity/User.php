@@ -72,6 +72,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 10, options: ["default" => "unactive"])]
     private ?string $status = 'unactive';
 
+    #[ORM\Column(length: 20, options: ["default" => "email"])]
+    private string $authProvider = 'email';
+
     // 🔐 Nouveau: code OTP (6 chiffres max)
     #[ORM\Column(length: 6, nullable: true)]
     private ?string $otpCode = null;
@@ -88,6 +91,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->notifPlanneds = new ArrayCollection();
         $this->showDetteInfos = true;
         $this->status = 'unactive';
+        $this->authProvider = 'email';
     }
 
     public function getId(): ?int
@@ -107,6 +111,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         }
 
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function getAuthProvider(): string
+    {
+        return $this->authProvider;
+    }
+
+    public function setAuthProvider(string $authProvider): static
+    {
+        if (!in_array($authProvider, ['email', 'google', 'apple'])) {
+            throw new \InvalidArgumentException("Invalid auth provider");
+        }
+
+        $this->authProvider = $authProvider;
 
         return $this;
     }

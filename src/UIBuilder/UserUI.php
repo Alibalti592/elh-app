@@ -61,6 +61,7 @@ class UserUI {
                 'city' => $city,
                 'photo' => $photo,
                 'status' => $user->getStatus(),
+                'authProvider' => $user->getAuthProvider(),
             ];
             $cachedDatas->set(json_encode($userUI));
             $this->cacheApp->save($cachedDatas);
