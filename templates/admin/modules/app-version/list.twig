@@ -5,7 +5,7 @@
 
 {% block content %}
     <div class="row">
-        <div class="col-lg-7">
+        <div class="col-lg-12">
             <div class="card">
                 <div class="card-body">
                     {% if dbError %}
@@ -46,17 +46,5 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-5">
-            <div class="card">
-                <div class="card-body">
-                    <p class="mb-2"><strong>Endpoint mobile:</strong></p>
-                    <p class="text-muted mb-3">GET <code>/elh-api/app-version?platform=ios|android</code></p>
-                    <p class="text-muted mb-0">
-                        Si la version installée est différente de celle configurée ici, l’application affiche le modal de mise à jour.
-                    </p>
-                </div>
-            </div>
-        </div>
     </div>
 {% endblock %}
-
