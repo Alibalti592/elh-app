@@ -190,6 +190,12 @@ class LayoutController extends AbstractController
                                 'url' => $this->generateUrl("admin_feedback_list"),
                                 'r' => "admin_feedback_list",
                             ],
+                            [
+                                'name' => "Versions mobile",
+                                'icon' => "icon-smartphone",
+                                'url' => $this->generateUrl("admin_app_versions"),
+                                'r' => "admin_app_versions",
+                            ],
                         ]
                     ],
 
