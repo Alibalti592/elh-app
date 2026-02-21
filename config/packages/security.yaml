@@ -14,7 +14,7 @@ security:
       pattern: ^/(_(profiler|wdt)|css|images|js)/
       security: false
     test_api_public:
-      pattern: ^/elh-api/test-api/sign-in-with-google-flutter
+      pattern: ^/elh-api/test-api/sign-in-with-(google|apple)-flutter
       security: false
     load_prieres_public:
       pattern: ^/elh-api/load-prieres
@@ -56,7 +56,7 @@ security:
   # Note: Only the *first* access control that matches will be used
   access_control:
     - {
-        path: ^/elh-api/test-api/sign-in-with-google-flutter,
+        path: ^/elh-api/test-api/sign-in-with-(google|apple)-flutter,
         roles: PUBLIC_ACCESS,
       }
     - { path: ^/elhadm, roles: ROLE_ADMIN }
