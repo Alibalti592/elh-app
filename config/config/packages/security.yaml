@@ -24,7 +24,7 @@ security:
                 failure_handler: lexik_jwt_authentication.handler.authentication_failure
                 
         test_api_public:
-            pattern: ^/elh-api/test-api/sign-in-with-google-flutter
+            pattern: ^/elh-api/test-api/sign-in-with-(google|apple)-flutter
             security: false
 
         api:
@@ -57,7 +57,7 @@ security:
          - { path: ^/elhadm, roles: ROLE_ADMIN }
          - { path: ^/elh-api/(login|token/refresh), roles: PUBLIC_ACCESS }
          - { path: ^user-registration, roles: PUBLIC_ACCESS }
-         - { path: ^/elh-api/test-api/sign-in-with-google-flutter, roles: PUBLIC_ACCESS }
+         - { path: ^/elh-api/test-api/sign-in-with-(google|apple)-flutter, roles: PUBLIC_ACCESS }
          - { path: ^/elh-api,       roles: IS_AUTHENTICATED_FULLY }
 
 
