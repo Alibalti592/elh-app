@@ -48,13 +48,11 @@
 
       .card-content {
           width: 100%;
-          padding-bottom: 220px;
       }
 
       .main-card {
           position: relative;
-          overflow: hidden;
-          min-height: 255mm;
+          overflow: visible;
       }
 
       .accent-bar {
@@ -162,12 +160,11 @@
       }
 
       .brand {
-          position: absolute;
-          left: 30px;
-          right: 30px;
-          bottom: 32px;
+          margin-top: 26px;
+          padding-top: 12px;
           text-align: center;
           page-break-inside: avoid;
+          break-inside: avoid;
       }
 
       .brand-name {
@@ -222,6 +219,8 @@
           border-radius: 12px;
           padding: 11px 12px;
           margin-bottom: 8px;
+          page-break-inside: avoid;
+          break-inside: avoid;
       }
 
       .debt-card:last-child {
@@ -239,6 +238,13 @@
 
       .debt-line strong {
           color: #111827;
+      }
+
+      .quote,
+      .title-wrap,
+      .annex-title {
+          page-break-inside: avoid;
+          break-inside: avoid;
       }
 
   </style>
