@@ -113,6 +113,11 @@
           margin-bottom: 0;
       }
 
+      .section-fasting {
+          page-break-inside: avoid;
+          break-inside: avoid;
+      }
+
       .section-heading {
           margin: 0 0 10px;
           font-size: 17px;
@@ -157,6 +162,15 @@
           font-size: 17px;
           font-weight: 700;
           line-height: 1.6;
+      }
+
+      .section-fasting .section-heading {
+          page-break-after: avoid;
+      }
+
+      .section-fasting .fasting-box {
+          margin-top: 0;
+          page-break-before: avoid;
       }
 
       .brand {
@@ -296,7 +310,7 @@
         </div>
       </div>
 
-      <div class="section">
+      <div class="section section-fasting">
         <h2 class="section-heading">Jours de jeûne</h2>
         <div class="fasting-box">{{ jeunTextValue }}</div>
       </div>
