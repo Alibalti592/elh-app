@@ -267,8 +267,10 @@ class TestamentController extends AbstractController
             'createdBy' => $testament->getCreatedBy()
         ]);
         $jeunText = "Aucun jour à rattraper";
+        $jeunTotalRemaining = 0;
         if(!is_null($jeun)) {
             $jeunText = $jeun->getRemainingDaysSummary();
+            $jeunTotalRemaining = $jeun->getTotalRemainingDays();
         }
 //        return $this->render('layout/pdf.twig', [
 //            'testament' => $testament,
@@ -286,6 +288,7 @@ class TestamentController extends AbstractController
             'amanas' => $amanasUIs,
             'dateString' => $dateString,
             'jeunText' => $jeunText,
+            'jeunTotalRemaining' => $jeunTotalRemaining,
         ]);
         // Generate unique filename
         $fileName = 'testament_' . $testament->getId() . uniqid() . '.pdf';

@@ -7,6 +7,16 @@
 {% set goods = testament.goods|default('')|trim %}
 {% set lastwill = testament.lastwill|default('')|trim %}
 {% set jeunTextValue = jeunText|default('')|trim %}
+{% set jeunFirstToken = jeunTextValue != '' ? (jeunTextValue|split(' ')|first) : '' %}
+{% if jeunTotalRemaining is defined %}
+  {% set jeunRemaining = jeunTotalRemaining %}
+{% elseif jeunFirstToken matches '/^\d+$/' %}
+  {% set jeunRemaining = jeunFirstToken + 0 %}
+{% else %}
+  {% set jeunRemaining = 0 %}
+{% endif %}
+{% set jeunLabel = jeunRemaining > 1 ? 'jours' : 'jour' %}
+{% set jeunSummary = jeunRemaining > 0 ? jeunRemaining ~ ' ' ~ jeunLabel ~ ' à rattraper' : 'Aucun jour à rattraper' %}
 {% set hasFinancialDetails = jeds is not empty or onms is not empty or amanas is not empty %}
 <html lang="{{ htmlLocale }}">
 <head>
@@ -28,8 +38,8 @@
           background: #ffffff;
           color: #1f2937;
           font-family: "DejaVu Sans", Arial, sans-serif;
-          font-size: 15px;
-          line-height: 1.5;
+          font-size: 17px;
+          line-height: 1.55;
       }
 
       .page {
@@ -69,7 +79,7 @@
           padding: 0 4px 20px;
           text-align: center;
           color: #6b7280;
-          font-size: 17px;
+          font-size: 19px;
           line-height: 1.65;
           font-style: italic;
           border-bottom: 1px solid #f1e8db;
@@ -80,7 +90,7 @@
           color: #8f9779;
           font-style: normal;
           font-weight: 700;
-          font-size: 15px;
+          font-size: 17px;
           opacity: 0.85;
       }
 
@@ -93,14 +103,14 @@
           margin: 0 0 8px;
           color: #8f9779;
           font-family: "Times New Roman", Georgia, serif;
-          font-size: 44px;
+          font-size: 48px;
           font-weight: 700;
       }
 
       .title-wrap p {
           margin: 0;
           color: #94a3b8;
-          font-size: 13px;
+          font-size: 15px;
           text-transform: uppercase;
           letter-spacing: 2px;
       }
@@ -120,7 +130,7 @@
 
       .section-heading {
           margin: 0 0 10px;
-          font-size: 17px;
+          font-size: 19px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 1px;
@@ -138,13 +148,14 @@
       .field-label {
           margin: 0 0 5px;
           color: #6b7280;
-          font-size: 16px;
+          font-size: 18px;
       }
 
       .field-value {
           margin: 0;
           color: #111827;
           font-weight: 600;
+          font-size: 17px;
           padding: 8px 10px;
           background: #faf6f0;
           border: 1px solid #efe3d3;
@@ -159,7 +170,7 @@
           border: 1px solid #d7c3aa;
           border-radius: 12px;
           color: #374151;
-          font-size: 17px;
+          font-size: 19px;
           font-weight: 700;
           line-height: 1.6;
       }
@@ -185,20 +196,20 @@
           margin: 0;
           color: #8f9779;
           font-family: "Times New Roman", Georgia, serif;
-          font-size: 26px;
+          font-size: 30px;
           letter-spacing: 0.5px;
       }
 
       .brand-sub {
           margin: 1px 0 0;
           color: #a39b8e;
-          font-size: 13px;
+          font-size: 15px;
           text-transform: uppercase;
           letter-spacing: 2px;
       }
 
       .brand-logo {
-          width: 104px;
+          width: 118px;
           display: block;
           margin: 4px auto 0;
       }
@@ -207,7 +218,7 @@
           margin: 10px 0 12px;
           color: #8f9779;
           font-family: "Times New Roman", Georgia, serif;
-          font-size: 37px;
+          font-size: 42px;
           text-align: center;
       }
 
@@ -222,7 +233,7 @@
       .debt-group h3 {
           margin: 0 0 10px;
           color: #8f9779;
-          font-size: 21px;
+          font-size: 24px;
           text-transform: uppercase;
           letter-spacing: 0.8px;
       }
@@ -244,6 +255,7 @@
       .debt-line {
           margin: 0 0 4px;
           color: #6b7280;
+          font-size: 17px;
       }
 
       .debt-line:last-child {
@@ -312,7 +324,7 @@
 
       <div class="section section-fasting">
         <h2 class="section-heading">Jours de jeûne</h2>
-        <div class="fasting-box">{{ jeunTextValue }}</div>
+        <div class="fasting-box">{{ jeunSummary }}</div>
       </div>
 
       {% if hasFinancialDetails %}
