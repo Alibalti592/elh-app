@@ -4,6 +4,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Carte;
 use App\Entity\CarteShare;
+use App\Entity\Jeun;
 use App\Entity\Obligation;
 use App\Entity\Testament;
 use App\Services\NotificationService;
@@ -110,6 +111,15 @@ class DashboardController extends AbstractController
         }
         $date = new \DateTime();
         $dateString = $date->format('d-m-Y'). ' à '.$date->format('H:i');
+        $jeun = $this->entityManager->getRepository(Jeun::class)->findOneBy([
+            'createdBy' => $testament->getCreatedBy()
+        ]);
+        $jeunText = "Aucun jour à rattraper";
+        $jeunTotalRemaining = 0;
+        if(!is_null($jeun)) {
+            $jeunText = $jeun->getRemainingDaysSummary();
+            $jeunTotalRemaining = $jeun->getTotalRemainingDays();
+        }
 //        return $this->render('layout/pdf.twig', [
 //            'testament' => $testament,
 //            'logoElhSrc' => $logoElhSrc,
@@ -125,6 +135,8 @@ class DashboardController extends AbstractController
             'onms' => $onmUIs,
             'amanas' => $amanasUIs,
             'dateString' => $dateString,
+            'jeunText' => $jeunText,
+            'jeunTotalRemaining' => $jeunTotalRemaining,
         ]);
         // Generate unique filename
         $fileName = 'testament_' . $testament->getId() . uniqid() . '.pdf';
