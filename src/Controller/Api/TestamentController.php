@@ -166,20 +166,26 @@ class TestamentController extends AbstractController
                     //notif
                     $title = $currentUser->getFullName();
                     $message = "Vous a partagé son testament";
-                    $data['view'] = "shared_testament_view";
-                    $notifToSend = new NotifToSend();
-                    $notifToSend->setUser($userToShareWith);
-                    $notifToSend->setTitle($title);
-                    $notifToSend->setMessage($message);
-                    $notifToSend->setSendAt(new \DateTime());
-                    $notifToSend->setType('testament_share');
-                    $notifToSend->setView($data['view']);
-                    $notifToSend->setDatas(json_encode($data, JSON_UNESCAPED_UNICODE));
-                    $notifToSend->setStatus('sent');
-                    $notifToSend->setIsRead(false);
-                    $this->entityManager->persist($notifToSend);
-                    $this->fcmNotificationService->sendFcmDefaultNotification($userToShareWith, $title, $message, $data);
-                    $this->entityManager->flush();
+                    // Keep view <= 20 chars (NotifToSend.view length constraint).
+                    $data['view'] = "shared_testament";
+                    $data['tab'] = "with_me";
+                    try {
+                        $notifToSend = new NotifToSend();
+                        $notifToSend->setUser($userToShareWith);
+                        $notifToSend->setTitle($title);
+                        $notifToSend->setMessage($message);
+                        $notifToSend->setSendAt(new \DateTime());
+                        $notifToSend->setType('testament_share');
+                        $notifToSend->setView($data['view']);
+                        $notifToSend->setDatas(json_encode($data, JSON_UNESCAPED_UNICODE));
+                        $notifToSend->setStatus('sent');
+                        $notifToSend->setIsRead(false);
+                        $this->entityManager->persist($notifToSend);
+                        $this->entityManager->flush();
+                        $this->fcmNotificationService->sendFcmDefaultNotification($userToShareWith, $title, $message, $data);
+                    } catch (\Throwable $t) {
+                        // Sharing is already persisted; notification errors must not break UX.
+                    }
                 }
             } else {
                 if(!is_null($testamentShare)) {

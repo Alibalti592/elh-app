@@ -22,7 +22,7 @@ class AdminPushNotificationController extends AbstractController
         'pardon_view' => 'Pardon',
         'mosque_notif_view' => 'Mosquée',
         'pompe_noitif_view' => 'Pompe funèbre',
-        'shared_testament_view' => 'Testament partagé',
+        'shared_testament' => 'Testament partagé',
         'pray' => 'Prière',
         'tranche' => 'Tranches',
         'feedback_view' => 'Avis / critiques',
