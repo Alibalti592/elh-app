@@ -75,9 +75,15 @@ class NotifToSend
         $timestamp = (int) $praytimeUI['timestamp'] - self::PRAY_REMINDER_OFFSET_SECONDS;
         $sendAt->setTimestamp($timestamp);
         $this->setUser($currentUser);
-        $this->setTitle("Rappel de prière");
+        $prayKey = (string) ($praytimeUI['key'] ?? '');
+        if ($prayKey === 'chorouq') {
+            $this->setTitle("🔔 Plus que 15 minutes pour la prière du Fajr");
+            $this->setMessage("Le réveil est dur, mais la bénédiction est tellement grande. Allez, motive-toi ! 🤍");
+        } else {
+            $this->setTitle("Rappel de prière");
+            $this->setMessage("Vous entrez bientôt dans le temps de prière de la Salât : ".$praytimeUI['label']);
+        }
         $this->setView("pray");
-        $this->setMessage("Vous entrez bientôt dans le temps de prière de la Salât : ".$praytimeUI['label']);
         $this->setSendAt($sendAt);
         $this->setType($praytimeUI['key']);
         if ($currentUser instanceof User) {
