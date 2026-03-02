@@ -160,48 +160,105 @@ class NotificationService {
         $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $data);
     }
 
-   public function notifForNewObligation(Obligation $obligation): void
-{
-    $createdBy = $obligation->getCreatedBy();
-    $userName = trim(($createdBy?->getFirstname() ?? '') . ' ' . ($createdBy?->getLastname() ?? ''));
-
-    if ($obligation->getRelatedTo() instanceof User) {
-        $relatedTo = $obligation->getRelatedTo();
-
-        $title = "Prêt partagée";
-        $message = "$userName a ajouté une dette";
-        $type = $obligation->getType();
-
-        if ($type === 'onm') {
-            $title = "Dette partagée";
-            $message = "$userName a ajouté un prêt";
-        } elseif ($type === 'amana') {
-            $title = "Amana partagée";
-            $message = "$userName a ajouté une amana";
-        }
-
-        // Build payload safely (instead of using an undefined $data)
-        $notifType = match ($type) {
-            'jed' => 'onm',
-            'onm' => 'jed',
-            default => $type,
-        };
-
-        $payload = [
-            'view' => 'obligation_list_view',
-            'type' => $notifType,
-        ];
-
-        // Never let a notif failure break the save
-        try {
-            $this->createSentNotif($relatedTo, $title, $message, $payload['view'], 'obligation', $payload);
-            $this->fcmNotificationService->sendFcmDefaultNotification($relatedTo, $title, $message, $payload);
-        } catch (\Throwable $e) {
-            // Optional: log and swallow
-            // $this->logger->warning('FCM notif failed', ['ex' => $e]);
+    public function notifForNewObligation(Obligation $obligation): void
+    {
+        $actor = $obligation->getCreatedBy();
+        if ($actor instanceof User) {
+            $this->sendObligationLifecycleNotification($actor, $obligation, 'create');
         }
     }
-}
+
+    public function notifForUpdateObligation(User $actor, Obligation $obligation): void
+    {
+        $this->sendObligationLifecycleNotification($actor, $obligation, 'update');
+    }
+
+    public function notifForDeleteObligation(User $actor, Obligation $obligation): void
+    {
+        $this->sendObligationLifecycleNotification($actor, $obligation, 'delete');
+    }
+
+    private function sendObligationLifecycleNotification(User $actor, Obligation $obligation, string $action): void
+    {
+        $createdBy = $obligation->getCreatedBy();
+        $relatedTo = $obligation->getRelatedTo();
+
+        if (!($createdBy instanceof User) || !($relatedTo instanceof User)) {
+            return;
+        }
+
+        if ($actor->getId() === $createdBy->getId()) {
+            $sendToUser = $relatedTo;
+        } elseif ($actor->getId() === $relatedTo->getId()) {
+            $sendToUser = $createdBy;
+        } else {
+            // Safety guard: actor must be part of this obligation
+            return;
+        }
+
+        $typeForRecipient = $this->getObligationTypeForRecipient(
+            $obligation->getType(),
+            $sendToUser,
+            $createdBy,
+            $relatedTo
+        );
+
+        $label = $this->getObligationLabelForNotification($typeForRecipient);
+        $verb = match ($action) {
+            'update' => 'vient de modifier',
+            'delete' => 'vient de supprimer',
+            default => 'a enregistré',
+        };
+
+        $title = match ($action) {
+            'update' => 'Obligation modifiée',
+            'delete' => 'Obligation supprimée',
+            default => 'Nouvelle obligation',
+        };
+
+        $actorName = trim(($actor->getFirstname() ?? '') . ' ' . ($actor->getLastname() ?? ''));
+        if ($actorName === '') {
+            $actorName = 'Un membre';
+        }
+
+        $message = "🤝{$actorName} {$verb} {$label} convenu entre vous. Consulte-le !🤲";
+        $data = [
+            'view' => 'obligation_list_view',
+            'type' => $typeForRecipient,
+        ];
+
+        try {
+            $this->createSentNotif($sendToUser, $title, $message, $data['view'], "obligation_{$action}", $data);
+            $this->fcmNotificationService->sendFcmDefaultNotification($sendToUser, $title, $message, $data);
+        } catch (\Throwable $e) {
+            // never block main flow if notif sending fails
+        }
+    }
+
+    private function getObligationTypeForRecipient(string $storedType, User $recipient, User $createdBy, User $relatedTo): string
+    {
+        // "jed/onm" are stored from createdBy perspective; invert only when recipient is relatedTo.
+        if ($recipient->getId() === $relatedTo->getId()) {
+            if ($storedType === 'jed') {
+                return 'onm';
+            }
+            if ($storedType === 'onm') {
+                return 'jed';
+            }
+        }
+
+        return $storedType;
+    }
+
+    private function getObligationLabelForNotification(string $type): string
+    {
+        return match ($type) {
+            'onm' => 'un emprunt',
+            'jed' => 'un prêt',
+            'amana' => 'une amana',
+            default => 'une obligation',
+        };
+    }
 
     public function notifForObligationEchance(Obligation $obligation) {
         $createdBy = $obligation->getCreatedBy();
@@ -264,30 +321,48 @@ class NotificationService {
 
 
     public function notifRefundDette(User $currentUser, Obligation $obligation) {
-        if(!is_null($obligation->getRelatedTo())) {
-            $type = $obligation->getType();
-            if($currentUser->getId() == $obligation->getRelatedTo()->getId()) {
-                $userToNotif = $obligation->getCreatedBy();
-            } else {
-                $userToNotif = $obligation->getRelatedTo();
-                if($type == 'jed') {
-                    $type = 'onm';
-                } elseif ($type == 'onm') {
-                    $type = 'jed';
-                }
-            }
-//            $amount = !is_null($obligation->getAmount()) ? $obligation->getAmount()."€" : null;
-            $title = "Remboursement partagé";
-            $message = $currentUser->getFullname(). " a notifié un remboursement";
-            $data['view'] = "obligation_list_view";
-            $data['type'] = $type;
-            $data['tab'] = 'refund';
-            $this->createSentNotif($userToNotif, $title, $message, $data['view'], 'obligation_refund', $data);
-            $this->fcmNotificationService->sendFcmDefaultNotification($userToNotif, $title, $message, $data);
+        $createdBy = $obligation->getCreatedBy();
+        $relatedTo = $obligation->getRelatedTo();
+
+        if (!($createdBy instanceof User) || !($relatedTo instanceof User)) {
+            return;
         }
+
+        if ($currentUser->getId() === $createdBy->getId()) {
+            $userToNotif = $relatedTo;
+        } elseif ($currentUser->getId() === $relatedTo->getId()) {
+            $userToNotif = $createdBy;
+        } else {
+            return;
+        }
+
+        $typeForRecipient = $this->getObligationTypeForRecipient(
+            $obligation->getType(),
+            $userToNotif,
+            $createdBy,
+            $relatedTo
+        );
+        $label = $this->getObligationLabelForNotification($typeForRecipient);
+
+        $actorName = trim(($currentUser->getFirstname() ?? '') . ' ' . ($currentUser->getLastname() ?? ''));
+        if ($actorName === '') {
+            $actorName = 'Un membre';
+        }
+
+        $title = "Remboursement partagé";
+        $message = "🩶Bonne nouvelle. {$actorName} vient de noter un remboursement d’{$label} convenu entre vous. Consulte-le ! 🤲";
+
+        $data = [
+            'view' => "obligation_list_view",
+            'type' => $typeForRecipient,
+            'tab' => 'refund',
+        ];
+
+        $this->createSentNotif($userToNotif, $title, $message, $data['view'], 'obligation_refund', $data);
+        $this->fcmNotificationService->sendFcmDefaultNotification($userToNotif, $title, $message, $data);
     }
 
-    private function createSentNotif(User $user, string $title, string $message, ?string $view = null, ?string $type = 'fcm', ?array $data = null): void
+    private function createSentNotif(User $user, string $title, string $message, ?string $view = null, ?string $type = 'fcm', ?array &$data = null): void
     {
         try {
             $notif = new NotifToSend();
@@ -304,6 +379,9 @@ class NotificationService {
             $notif->setIsRead(false);
             $this->em->persist($notif);
             $this->em->flush();
+            if (!is_null($data)) {
+                $data['notifId'] = (string)$notif->getId();
+            }
         } catch (\Throwable $e) {
             // never block main flow if notif persistence fails
         }

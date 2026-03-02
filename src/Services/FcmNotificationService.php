@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Entity\ChatMessage;
+use App\Entity\ChatThread;
 use App\Entity\FcmToken;
 use App\Entity\User;
 use App\Repository\FcmTokenRepository;
@@ -23,7 +24,7 @@ class FcmNotificationService {
         $this->firebaseFcmk = $firebaseFcmk;
     }
 
-    public function sendFcmChatNotification($fcmTokens, ChatMessage $bubble) {
+    public function sendFcmChatNotification($fcmTokens, ChatMessage $bubble, ChatThread $thread) {
         $createdBy = $bubble->getCreatedBy();
         $name = $createdBy->getFirstname() .' '. $createdBy->getLastname();
         $title = 'Nouveau message de ' .$name;
@@ -31,6 +32,7 @@ class FcmNotificationService {
         $userUi  = $this->userUI->getUserProfilUI($createdBy);
         $datas = [
             'view' => 'chatview',
+            'threadId' => $thread->getId(),
             'userId' => $createdBy->getId(),
             'userUI' => $userUi,
             'image' => $userUi['photo']

@@ -98,7 +98,7 @@ class ChatNotificationService {
         }
         //FCM token
         $fcmTokens = $this->entityManager->getRepository(FcmToken::class)->findTokensOfUsers($users);
-        $this->fcmNotificationService->sendFcmChatNotification($fcmTokens, $chatMessage);
+        $this->fcmNotificationService->sendFcmChatNotification($fcmTokens, $chatMessage, $thread);
     }
 
     public function clearNotifications(ChatThread $thread, $currentUser) {

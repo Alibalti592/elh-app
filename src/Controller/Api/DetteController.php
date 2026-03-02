@@ -209,14 +209,12 @@ public function loadDettes(Request $request): Response
         $obligation->setFromUI($data, $isEdit);
 
         // Set related user only on CREATE (same as legacy)
-        $sendNotifTo = null;
         if (!$isEdit && !empty($data['relatedUserId'])) {
- $userRelated = $this->entityManager->getRepository(User::class)->findOneBy([
+            $userRelated = $this->entityManager->getRepository(User::class)->findOneBy([
                 'id' => $data['relatedUserId']
-            ]);           
-             if ($userRelated instanceof User) {
+            ]);
+            if ($userRelated instanceof User) {
                 $obligation->setRelatedTo($userRelated);
-                $sendNotifTo = $userRelated;
             }
         }
 
@@ -237,9 +235,13 @@ public function loadDettes(Request $request): Response
         $this->entityManager->persist($currentUser);
         $this->entityManager->flush();
 
-        // Notify on CREATE (legacy behavior); add your own "updated" notif if desired
-        if ($sendNotifTo) {
-            $this->notificationService->notifForNewObligation($obligation);
+        // Notify other party when obligation is linked to a MC user.
+        if ($obligation->getRelatedTo() instanceof User) {
+            if ($isEdit) {
+                $this->notificationService->notifForUpdateObligation($currentUser, $obligation);
+            } else {
+                $this->notificationService->notifForNewObligation($obligation);
+            }
         }
 
         return new JsonResponse([
@@ -258,12 +260,20 @@ public function loadDettes(Request $request): Response
             'id' => $request->get('obligationId'),
         ]);
         if(!is_null($obligation)) {
-            if($currentUser->getId() != $obligation->getCreatedBy()->getId() && $currentUser->getId() != $obligation->getRelatedTo()->getId()) {
+            $relatedTo = $obligation->getRelatedTo();
+            if(
+                $currentUser->getId() != $obligation->getCreatedBy()->getId()
+                && (is_null($relatedTo) || $currentUser->getId() != $relatedTo->getId())
+            ) {
                 throw new \ErrorException("cant deleteObligation");
             }
             $obligation->setDeletedAt(new \DateTimeImmutable());
             $this->entityManager->persist($obligation);
             $this->entityManager->flush();
+
+            if ($relatedTo instanceof User) {
+                $this->notificationService->notifForDeleteObligation($currentUser, $obligation);
+            }
         } else {
             throw new \ErrorException("deleteObligation");
         }

@@ -76,6 +76,7 @@ class SendNotifCommand extends Command
             if (!is_null($notifToSend->getView())) {
                 $data['view'] = $notifToSend->getView();
             }
+            $data['notifId'] = (string)$notifToSend->getId();
 
             // Compat: keep legacy action buttons if this view is used.
             if (($data['view'] ?? null) === 'tranche_action' && !isset($data['actions'])) {
