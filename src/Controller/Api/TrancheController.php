@@ -17,6 +17,7 @@ use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\FirebaseException;
 use App\Entity\User;
 use App\Services\FcmNotificationService;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/tranche')]
 class TrancheController extends AbstractController
 {
@@ -127,6 +128,10 @@ public function create(Request $request): JsonResponse
     $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
     $tranche->setAmount((float)$data['amount']);
+    if ($currentUser instanceof User) {
+        // garde la trace de l'utilisateur ayant saisi le versement
+        $tranche->setEmprunteur($currentUser);
+    }
 
     try {
         $tranche->setPaidAt(new \DateTime((string)$data['paidAt']));
@@ -194,24 +199,24 @@ public function create(Request $request): JsonResponse
             // creator is acting
             $sendToUser = $relatedToEntity;
             if ($type === 'jed') {
-                $title = 'Un nouveau versement a été ajouté';
-                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ a été ajouté par '.$fullName($currentUser).'.';
+                $title = 'Un nouveau remboursement partiel a été ajouté';
+                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
             } else {
-                $title = 'Un nouveau versement a été proposé';
-                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ vous est proposé par '.$fullName($currentUser).'.';
+                $title = 'Un nouveau remboursement partiel a été proposé';
+                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
             }
         } else {
             // related user is acting
             $sendToUser = $obligationCreator;
             if ($type === 'onm') {
-                $title = 'Un nouveau versement a été ajouté';
-                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ a été ajouté par '.$fullName($currentUser).'.';
+                $title = 'Un nouveau remboursement partiel a été ajouté';
+                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
             } else {
-                $title = 'Un nouveau versement a été proposé';
-                $message = 'Un nouveau versement de '.$tranche->getAmount().'€ vous est proposé par '.$fullName($currentUser).'.';
+                $title = 'Un nouveau remboursement partiel a été proposé';
+                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
             }
         }
@@ -264,58 +269,97 @@ public function create(Request $request): JsonResponse
 
     public function respond(Request $request): Response
     {
-        $data = json_decode($request->getContent(), true);
-        $tranche = $this->trancheRepository->find($data['id']);
+        /** @var User|null $currentUser */
+        $currentUser = $this->getUser();
+        if (!$currentUser) {
+            return $this->json(['error' => 'Utilisateur non authentifié'], 401);
+        }
 
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Payload invalide'], 400);
+        }
+
+        $trancheId = (int)($data['id'] ?? $data['trancheId'] ?? 0);
+        if ($trancheId <= 0) {
+            return $this->json(['error' => 'Id de tranche manquant'], 400);
+        }
+
+        /** @var Tranche|null $tranche */
+        $tranche = $this->trancheRepository->find($trancheId);
         if (!$tranche) {
             return $this->json(['error' => 'Tranche introuvable'], 404);
         }
 
-        if ($data['response'] === 'accept') {
-            $obligation = $tranche->getObligation();
-              $newRemainingAmount = $obligation->getRemainingAmount() - $tranche->getAmount();
-    if($newRemainingAmount < 0) {
-       return $this->json(['error' => 'Le montant de la tranche dépasse le montant restant de l\'obligation'], 400);
-    }
-            $tranche->setStatus('tranche accepte');
-            $message = "La tranche a été acceptée par le préteur.";
-            // Mise à jour de remainingAmount
-  
-    if($newRemainingAmount == 0) {
-        $obligation->setStatus('refund');
-    }
-    $obligation->setRemainingAmount(
-        $obligation->getRemainingAmount() - $tranche->getAmount()
-    );
+        $obligation = $tranche->getObligation();
+        if (!$obligation) {
+            return $this->json(['error' => 'Obligation introuvable'], 400);
+        }
 
-        } elseif ($data['response'] === 'decline') {
+        $createdBy = $obligation->getCreatedBy();
+        $relatedTo = $obligation->getRelatedTo();
+        if (!$createdBy || !$relatedTo) {
+            return $this->json(['error' => 'Aucun membre associé à cette obligation'], 400);
+        }
+
+        $isCreator = $currentUser->getId() === $createdBy->getId();
+        $isRelated = $currentUser->getId() === $relatedTo->getId();
+        if ((!$isCreator && !$isRelated) && !$this->isGranted('ROLE_ADMIN')) {
+            return $this->json(['error' => 'Accès refusé'], 403);
+        }
+
+        if (strtolower(trim((string)$tranche->getStatus())) !== 'en attente') {
+            return $this->json(['error' => 'Cette tranche a déjà été traitée'], 400);
+        }
+
+        $expectedApprover = null;
+        $type = (string)$obligation->getType();
+        if ($type === 'jed') {
+            $expectedApprover = $createdBy;
+        } elseif ($type === 'onm') {
+            $expectedApprover = $relatedTo;
+        } elseif ($type === 'amana') {
+            $initiator = $tranche->getEmprunteur();
+            if ($initiator instanceof User) {
+                $expectedApprover = ($initiator->getId() === $createdBy->getId())
+                    ? $relatedTo
+                    : $createdBy;
+            }
+        }
+
+        if ($expectedApprover instanceof User
+            && $currentUser->getId() !== $expectedApprover->getId()
+            && !$this->isGranted('ROLE_ADMIN')) {
+            return $this->json(['error' => 'Seule la partie concernée peut valider cette tranche'], 403);
+        }
+
+        $response = (string)($data['response'] ?? '');
+        $newRemainingAmount = (float)$obligation->getRemainingAmount();
+
+        if ($response === 'accept') {
+            $newRemainingAmount = $newRemainingAmount - (float)$tranche->getAmount();
+            if ($newRemainingAmount < 0) {
+                return $this->json(['error' => 'Le montant de la tranche dépasse le montant restant de l\'obligation'], 400);
+            }
+
+            $tranche->setStatus('tranche accepte');
+            $obligation->setRemainingAmount($newRemainingAmount);
+            if ($newRemainingAmount == 0.0) {
+                $obligation->setStatus('refund');
+            }
+        } elseif ($response === 'decline') {
             $tranche->setStatus('tranche refuse');
-            $message = "La tranche a été refusée par le préteur.";
         } else {
             return $this->json(['error' => 'Réponse invalide'], 400);
         }
 
         $this->entityManager->flush();
 
-        // ---- Notification au créateur ----
-//         $notif = new NotifToSend();
-// $notif->setUser($tranche->getObligation()->getCreatedBy());
-//         $notif->setTitle("Réponse à un versement");
-//         $notif->setMessage($message);
-//         $notif->setDatas(json_encode([
-//             'trancheId' => $tranche->getId(),
-//             'status' => $tranche->getStatus()
-//         ]));
-//         $notif->setSendAt(new \DateTime());
-//         $notif->setType('tranche');
-//         $notif->setView("tranche");
-
-//         $this->entityManager->persist($notif);
-//         $this->entityManager->flush();
-
         return $this->json([
             'success' => true,
             'status' => $tranche->getStatus(),
+            'newRemainingAmount' => $newRemainingAmount,
+            // backward compatibility with old typo used in app
             'newRemaingAmount' => $newRemainingAmount,
         ]);
     }

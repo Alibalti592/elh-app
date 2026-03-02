@@ -22,6 +22,21 @@ class AdminNavPageController extends AbstractController
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UtilsService $utilsService,
                                 private readonly CRUDService $CRUDService, private readonly S3Service $s3Service, private readonly UploadMediaService $uploadMediaService) {}
 
+    private function ensureRamadanPageExists(): void
+    {
+        $page = $this->entityManager->getRepository(NavPageContent::class)->findOneBy([
+            'slug' => 'ramadan'
+        ]);
+        if (is_null($page)) {
+            $page = new NavPageContent();
+            $page->setContent('À saisir');
+            $page->setTitle('Ramadan 2026');
+            $page->setSlug('ramadan');
+            $this->entityManager->persist($page);
+            $this->entityManager->flush();
+        }
+    }
+
     #[Route('/admin/nav-app-page', name: 'admin_navpages_list')]
     public function index(): Response
     {
@@ -34,6 +49,7 @@ class AdminNavPageController extends AbstractController
     #[Route('/v-load-list-nav-pages')]
     public function loadList(Request $request): Response
     {
+        $this->ensureRamadanPageExists();
         $crudParams = $this->CRUDService->getListParametersFromRequest($request);
         $pages = $this->entityManager->getRepository(NavPageContent::class)->findListFiltered($crudParams);
         $count = $this->entityManager->getRepository(NavPageContent::class)->countListFiltered($crudParams);
@@ -271,7 +287,7 @@ class AdminNavPageController extends AbstractController
         if(is_null($page)) {
             $page = new NavPageContent();
             $page->setContent('À saisir');
-            $page->setTitle('Ramadan');
+            $page->setTitle('Ramadan 2026');
             $page->setSlug($pageKey);
             $this->entityManager->persist($page);
             $this->entityManager->flush();
