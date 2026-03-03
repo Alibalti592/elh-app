@@ -213,7 +213,7 @@ class NotificationService {
         $title = match ($action) {
             'update' => 'Obligation modifiée',
             'delete' => 'Obligation supprimée',
-            default => 'Nouvelle obligation',
+            default => $this->getCreateObligationTitleForNotification($typeForRecipient),
         };
 
         $actorName = trim(($actor->getFirstname() ?? '') . ' ' . ($actor->getLastname() ?? ''));
@@ -257,6 +257,16 @@ class NotificationService {
             'jed' => 'un prêt',
             'amana' => 'une amana',
             default => 'une obligation',
+        };
+    }
+
+    private function getCreateObligationTitleForNotification(string $type): string
+    {
+        return match ($type) {
+            'onm' => 'Nouvel emprunt',
+            'jed' => 'Nouveau prêt',
+            'amana' => 'Nouvelle amana',
+            default => 'Nouvelle obligation',
         };
     }
 
@@ -350,7 +360,7 @@ class NotificationService {
         }
 
         $title = "Remboursement partagé";
-        $message = "🩶Bonne nouvelle. {$actorName} vient de noter un remboursement d’{$label} convenu entre vous. Consulte-le ! 🤲";
+        $message = "🩶Bonne nouvelle {$actorName} vient de noter un remboursement d’{$label} convenu entre vous. Consulte-le ! 🤲";
 
         $data = [
             'view' => "obligation_list_view",

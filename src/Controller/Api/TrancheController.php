@@ -32,6 +32,39 @@ class TrancheController extends AbstractController
         $this->fcmNotificationService = $fcmNotificationService;
     }
 
+    private function ackActionRequiredTrancheNotifications(User $user, int $trancheId): void
+    {
+        $pendingNotifs = $this->entityManager
+            ->getRepository(NotifToSend::class)
+            ->createQueryBuilder('n')
+            ->where('n.user = :user')
+            ->andWhere('n.type = :type')
+            ->andWhere('(n.isRead = :isRead OR n.isRead IS NULL)')
+            ->setParameter('user', $user)
+            ->setParameter('type', 'tranche')
+            ->setParameter('isRead', false)
+            ->getQuery()
+            ->getResult();
+
+        foreach ($pendingNotifs as $notif) {
+            $datas = json_decode($notif->getDatas() ?: '[]', true);
+            if (!is_array($datas)) {
+                continue;
+            }
+
+            $notifTrancheId = isset($datas['trancheId']) ? (int)$datas['trancheId'] : 0;
+            $actions = $datas['actions'] ?? null;
+            $isActionRequired = is_array($actions) && count($actions) > 0;
+
+            if ($notifTrancheId !== $trancheId || !$isActionRequired) {
+                continue;
+            }
+
+            $notif->setIsRead(true);
+            $this->entityManager->remove($notif);
+        }
+    }
+
   
 
 #[Route('/tranche', methods: ['GET'])]
@@ -200,11 +233,11 @@ public function create(Request $request): JsonResponse
             $sendToUser = $relatedToEntity;
             if ($type === 'jed') {
                 $title = 'Un nouveau remboursement partiel a été ajouté';
-                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
             } else {
                 $title = 'Un nouveau remboursement partiel a été proposé';
-                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
             }
         } else {
@@ -212,11 +245,11 @@ public function create(Request $request): JsonResponse
             $sendToUser = $obligationCreator;
             if ($type === 'onm') {
                 $title = 'Un nouveau remboursement partiel a été ajouté';
-                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
             } else {
                 $title = 'Un nouveau remboursement partiel a été proposé';
-                $message = "🩶Bonne nouvelle".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
                 $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
             }
         }
@@ -352,6 +385,10 @@ public function create(Request $request): JsonResponse
         } else {
             return $this->json(['error' => 'Réponse invalide'], 400);
         }
+
+        // La tranche a été traitée depuis la vue Obligation:
+        // on retire la notification d'action associée de la cloche du validateur.
+        $this->ackActionRequiredTrancheNotifications($currentUser, $trancheId);
 
         $this->entityManager->flush();
 
