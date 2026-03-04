@@ -101,6 +101,7 @@ class SendNotifCommand extends Command
                 $this->entityManager->remove($notifToSend);
             } else {
                 $notifToSend->setStatus('sent');
+                $notifToSend->setIsRead(false);
             }
 
         

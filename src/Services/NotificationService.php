@@ -18,6 +18,7 @@ use App\Entity\PlanSell;
 use App\Entity\Pompe;
 use App\Entity\PompeNotification;
 use App\Entity\ProgramEvent;
+use App\Entity\Salat;
 use App\Entity\ShopAbo;
 use App\Entity\ShopOrder;
 use App\Entity\Coaching\ChatBubble;
@@ -112,6 +113,47 @@ class NotificationService {
         $data['view'] = "pardon_view";
         $this->createSentNotif($userTarget, $title, $message, $data['view'], 'pardon', $data);
         $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $data);
+    }
+
+    public function notifForNewSalatInFavoriteMosque(Salat $salat, User $userTarget): void
+    {
+        $mosque = $salat->getMosque();
+        if (is_null($mosque)) {
+            return;
+        }
+
+        $title = "annonce salat al janaza";
+        $message = "🕌Une salât janaza annoncée dans votre mosquée\nQu’Allah pardonne au défunt et lui accorde sa miséricorde 🤲";
+        $data = [
+            'view' => 'mosque_notif_view',
+            'mosque' => $this->mosqueUI->getMosque($mosque),
+            'salatId' => $salat->getId(),
+        ];
+
+        $now = new \DateTimeImmutable('now');
+        $ceremonyAt = $salat->getCeremonyAt();
+        $scheduledAt = $ceremonyAt instanceof \DateTimeImmutable ? $ceremonyAt->modify('-24 hours') : $now;
+
+        // If ceremony is in less than 24h, notify immediately.
+        if ($scheduledAt <= $now) {
+            $this->createSentNotif($userTarget, $title, $message, $data['view'], 'salat_mosque', $data);
+            $this->fcmNotificationService->sendFcmDefaultNotification($userTarget, $title, $message, $data);
+            return;
+        }
+
+        // Otherwise, queue notification to be sent 24h before ceremony.
+        $notif = new NotifToSend();
+        $notif->setUser($userTarget);
+        $notif->setTitle($title);
+        $notif->setMessage($message);
+        $notif->setSendAt(\DateTime::createFromImmutable($scheduledAt));
+        $notif->setType('salat_mosque');
+        $notif->setView($data['view']);
+        $notif->setDatas(json_encode($data, JSON_UNESCAPED_UNICODE));
+        $notif->setStatus('pending');
+        // Hidden from bell until command sends it.
+        $notif->setIsRead(true);
+        $this->em->persist($notif);
     }
 
 
@@ -211,8 +253,8 @@ class NotificationService {
         };
 
         $title = match ($action) {
-            'update' => 'Obligation modifiée',
-            'delete' => 'Obligation supprimée',
+            'update' => $this->getUpdateObligationTitleForNotification($typeForRecipient),
+            'delete' => $this->getDeleteObligationTitleForNotification($typeForRecipient),
             default => $this->getCreateObligationTitleForNotification($typeForRecipient),
         };
 
@@ -270,6 +312,26 @@ class NotificationService {
         };
     }
 
+    private function getUpdateObligationTitleForNotification(string $type): string
+    {
+        return match ($type) {
+            'onm' => 'Emprunt modifié',
+            'jed' => 'Prêt modifié',
+            'amana' => 'Amana modifiée',
+            default => 'Obligation modifiée',
+        };
+    }
+
+    private function getDeleteObligationTitleForNotification(string $type): string
+    {
+        return match ($type) {
+            'onm' => 'Emprunt supprimé',
+            'jed' => 'Prêt supprimé',
+            'amana' => 'Amana supprimée',
+            default => 'Obligation supprimée',
+        };
+    }
+
     public function notifForObligationEchance(Obligation $obligation) {
         $createdBy = $obligation->getCreatedBy();
         $userName = $createdBy->getFirstname()." ".$createdBy->getLastname();
@@ -298,15 +360,8 @@ class NotificationService {
     }
 
     public function getTitleMessageForObligationType($type, $userName, $otherName) {
-        $title = "Le dette arrive à échéance";
-        $message =  "La dette entre ".$userName. ' et '.$otherName .' arrive à échéance';
-        if($type == 'onm') {
-            $title = "Le prêt arrive à échéance";
-            $message =  "Le prêt entre ".$userName. ' et '.$otherName .' arrive à échéance';
-        } elseif ($type == 'amana') {
-            $title = "La amana arrive à échéance";
-            $message =  "La amana entre ".$userName. ' et '.$otherName .' arrive à échéance';
-        }
+        $title = "⏰ Rappel: l’échéance du prêt accordé à ".$otherName." se termine demain";
+        $message = "Pense à honorer ta parole.";
         return [
             'title' => $title,
             'message' => $message,
