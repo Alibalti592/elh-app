@@ -122,7 +122,7 @@ class NotificationService {
             return;
         }
 
-        $title = "annonce salat al janaza";
+        $title = "Annonce Salât Al-Janza";
         $message = "🕌Une salât janaza annoncée dans votre mosquée\nQu’Allah pardonne au défunt et lui accorde sa miséricorde 🤲";
         $data = [
             'view' => 'mosque_notif_view',
