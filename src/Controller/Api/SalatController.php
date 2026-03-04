@@ -169,6 +169,7 @@ class SalatController extends AbstractController
             'id' => $salatDatas['id'],
             'createdBy' => $currentUser
         ]);
+        $isNewSalat = is_null($salat);
         if(is_null($salat)) {
             $salat = new Salat();
             $salat->setCreatedBy($currentUser);
@@ -199,6 +200,30 @@ class SalatController extends AbstractController
         $this->entityManager->persist($salat);
         $this->entityManager->persist($currentUser);
         $this->entityManager->flush();
+
+        // New Salat tied to a mosque: notify users who favorited this mosque.
+        if ($isNewSalat && !is_null($salat->getMosque())) {
+            $favorites = $this->entityManager->getRepository(MosqueFavorite::class)->findBy([
+                'mosque' => $salat->getMosque(),
+            ]);
+            $alreadyNotifiedUserIds = [];
+            foreach ($favorites as $favorite) {
+                $userTarget = $favorite->getUser();
+                if (!($userTarget instanceof User)) {
+                    continue;
+                }
+                if ($userTarget->getId() === $currentUser->getId()) {
+                    continue;
+                }
+                if (in_array($userTarget->getId(), $alreadyNotifiedUserIds, true)) {
+                    continue;
+                }
+                $alreadyNotifiedUserIds[] = $userTarget->getId();
+                $this->notificationService->notifForNewSalatInFavoriteMosque($salat, $userTarget);
+            }
+            $this->entityManager->flush();
+        }
+
         $jsonResponse = new JsonResponse();
         $jsonResponse->setData([
             'salat' => $this->salatUI->getSalat($salat, $currentUser),
@@ -339,6 +364,23 @@ class SalatController extends AbstractController
             'createdBy' => $currentUser
         ]);
         if(!is_null($salat)) {
+            $salatShares = $this->entityManager->getRepository(SalatShare::class)->findBy([
+                'salat' => $salat,
+            ]);
+            foreach ($salatShares as $salatShare) {
+                $this->entityManager->remove($salatShare);
+            }
+
+            $carte = $salat->getCarte();
+            if (!is_null($carte)) {
+                $carteShares = $this->entityManager->getRepository(CarteShare::class)->findBy([
+                    'carte' => $carte,
+                ]);
+                foreach ($carteShares as $carteShare) {
+                    $this->entityManager->remove($carteShare);
+                }
+            }
+
             $this->entityManager->remove($salat);
             $this->entityManager->flush();
         }
