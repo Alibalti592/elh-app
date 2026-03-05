@@ -334,34 +334,77 @@ class NotificationService {
 
     public function notifForObligationEchance(Obligation $obligation) {
         $createdBy = $obligation->getCreatedBy();
-        $userName = $createdBy->getFirstname()." ".$createdBy->getLastname();
-        $otherName = $obligation->getFirstname()." ".$obligation->getLastname();
-        if(!is_null($obligation->getRelatedTo())) {
-            $other = $obligation->getRelatedTo();
-            $otherName = $other->getFirstname()." ".$other->getLastname();
+        if (!($createdBy instanceof User)) {
+            return;
         }
-        $titleMessage = $this->getTitleMessageForObligationType($obligation->getType(), $userName, $otherName);
-        $data['view'] = "obligation_list_view";
-        $data['type'] = $obligation->getType();
+
+        $relatedTo = $obligation->getRelatedTo();
+        $type = $obligation->getType();
+        $actorName = trim($createdBy->getFirstname()." ".$createdBy->getLastname());
+        $otherName = trim($obligation->getFirstname()." ".$obligation->getLastname());
+        if ($relatedTo instanceof User) {
+            $otherName = trim($relatedTo->getFirstname()." ".$relatedTo->getLastname());
+        }
+
+        $borrowerName = trim($obligation->getFirstname()." ".$obligation->getLastname());
+        $lenderName = $borrowerName;
+
+        if ($type === 'jed') {
+            $borrowerName = trim($createdBy->getFirstname()." ".$createdBy->getLastname());
+            if ($relatedTo instanceof User) {
+                $lenderName = trim($relatedTo->getFirstname()." ".$relatedTo->getLastname());
+            }
+        } elseif ($type === 'onm') {
+            $lenderName = trim($createdBy->getFirstname()." ".$createdBy->getLastname());
+            if ($relatedTo instanceof User) {
+                $borrowerName = trim($relatedTo->getFirstname()." ".$relatedTo->getLastname());
+            }
+        }
+
+        $typeForCreatedBy = $type;
+        if ($relatedTo instanceof User) {
+            $typeForCreatedBy = $this->getObligationTypeForRecipient($type, $createdBy, $createdBy, $relatedTo);
+        }
+
+        $titleMessage = $this->getTitleMessageForObligationType($typeForCreatedBy, $borrowerName, $lenderName, $actorName, $otherName);
+        $data = [
+            'view' => "obligation_list_view",
+            'type' => $typeForCreatedBy,
+        ];
         $this->createSentNotif($createdBy, $titleMessage['title'], $titleMessage['message'], $data['view'], 'obligation_echeance', $data);
         $this->fcmNotificationService->sendFcmDefaultNotification($createdBy, $titleMessage['title'], $titleMessage['message'], $data);
-        if(!is_null($obligation->getRelatedTo())) {
-            $type = $obligation->getType();
-            if($type == 'onm') {
-                $type = 'jed';
-            } elseif ($type == 'jed') {
-                $type = 'onm';
-            }
-            $data['type'] = $type;
-            $titleMessage = $this->getTitleMessageForObligationType($type, $userName, $otherName);
-            $this->createSentNotif($obligation->getRelatedTo(), $titleMessage['title'], $titleMessage['message'], $data['view'], 'obligation_echeance', $data);
-            $this->fcmNotificationService->sendFcmDefaultNotification($obligation->getRelatedTo(), $titleMessage['title'], $titleMessage['message'],$data);
+
+        if ($relatedTo instanceof User) {
+            $typeForRelated = $this->getObligationTypeForRecipient($type, $relatedTo, $createdBy, $relatedTo);
+            $data['type'] = $typeForRelated;
+            $titleMessage = $this->getTitleMessageForObligationType($typeForRelated, $borrowerName, $lenderName, $actorName, $otherName);
+            $this->createSentNotif($relatedTo, $titleMessage['title'], $titleMessage['message'], $data['view'], 'obligation_echeance', $data);
+            $this->fcmNotificationService->sendFcmDefaultNotification($relatedTo, $titleMessage['title'], $titleMessage['message'],$data);
         }
     }
 
-    public function getTitleMessageForObligationType($type, $userName, $otherName) {
-        $title = "⏰ Rappel";
-        $message = "L’échéance du prêt accordé à ".$otherName." se termine demain\nPense à honorer ta parole.";
+    public function getTitleMessageForObligationType($type, $borrowerName, $lenderName, $actorName = '', $otherName = '') {
+        if ($type === 'jed') {
+            $title = "⏰ Rappel";
+            $message = "L’échéance du prêt accordé à ".$lenderName." se termine demain\nPense à honorer ta parole.";
+        } elseif ($type === 'onm') {
+            $title = "⏰ Rappel";
+            $message = "Remboursement prévu demain\nLe prêt accordé à ".$borrowerName." arrive à échéance demain. Pense à vérifier si le paiement a bien été effectué.";
+        } elseif ($type === 'amana') {
+            $title = "La amana arrive à échéance";
+            $leftName = trim((string) $actorName);
+            $rightName = trim((string) $otherName);
+            if ($leftName === '') {
+                $leftName = $borrowerName;
+            }
+            if ($rightName === '') {
+                $rightName = $lenderName;
+            }
+            $message = "La amana entre ".$leftName." et ".$rightName." arrive à échéance";
+        } else {
+            $title = "⏰ Rappel";
+            $message = "L’échéance arrive demain\nPense à honorer ta parole.";
+        }
         return [
             'title' => $title,
             'message' => $message,
