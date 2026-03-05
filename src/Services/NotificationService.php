@@ -122,7 +122,7 @@ class NotificationService {
             return;
         }
 
-        $title = "Annonce Salât Al-Janza";
+        $title = "Nous appartenons à Allah et c’est vers Lui que nous retournons. 🤲";
         $message = "🕌Une salât janaza annoncée dans votre mosquée\nQu’Allah pardonne au défunt et lui accorde sa miséricorde 🤲";
         $data = [
             'view' => 'mosque_notif_view',
@@ -360,8 +360,8 @@ class NotificationService {
     }
 
     public function getTitleMessageForObligationType($type, $userName, $otherName) {
-        $title = "⏰ Rappel: l’échéance du prêt accordé à ".$otherName." se termine demain";
-        $message = "Pense à honorer ta parole.";
+        $title = "⏰ Rappel";
+        $message = "L’échéance du prêt accordé à ".$otherName." se termine demain\nPense à honorer ta parole.";
         return [
             'title' => $title,
             'message' => $message,
