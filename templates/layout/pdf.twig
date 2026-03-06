@@ -366,9 +366,9 @@
             <h3>Amanas en cours</h3>
             {% for amana in amanas %}
               <div class="debt-card">
-                <p class="debt-line">Entre : <strong>{{ testament.createdBy.fullname }}</strong></p>
-                <p class="debt-line">Et : <strong>{{ amana.cardOtherName }}</strong> | Tél : <strong>{{ amana.cardOtherTel }}</strong></p>
-                <p class="debt-line">Date : <strong>{{ amana.dateDisplay }}</strong></p>
+                <p class="debt-line">Emprunteur : <strong>{{ amana.emprunteurName }}</strong> | Tél : <strong>{{ amana.emprunteurNum }}</strong></p>
+                <p class="debt-line">Prêteur : <strong>{{ amana.preteurName }}</strong> | Tél : <strong>{{ amana.preteurNum }}</strong></p>
+                <p class="debt-line">Montant : <strong>{{ amana.amount }}€</strong></p>
               </div>
             {% endfor %}
           </div>
