@@ -386,10 +386,10 @@ class NotificationService {
     public function getTitleMessageForObligationType($type, $borrowerName, $lenderName, $actorName = '', $otherName = '') {
         if ($type === 'jed') {
             $title = "⏰ Rappel";
-            $message = "L’échéance du prêt accordé à ".$lenderName." se termine demain\nPense à honorer ta parole.";
+            $message = "L’échéance du prêt accordé par ".$lenderName." se termine demain\nPense à honorer ta parole.";
         } elseif ($type === 'onm') {
-            $title = "⏰ Rappel";
-            $message = "Remboursement prévu demain\nLe prêt accordé à ".$borrowerName." arrive à échéance demain. Pense à vérifier si le paiement a bien été effectué.";
+            $title = "🔔Remboursement attendu";
+            $message = $borrowerName." a été relancé(e) pour le remboursement de demain. L’Islam nous enseigne la patience et la clémence.🤲";
         } elseif ($type === 'amana') {
             $title = "La amana arrive à échéance";
             $leftName = trim((string) $actorName);
