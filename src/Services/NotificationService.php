@@ -263,7 +263,8 @@ class NotificationService {
             $actorName = 'Un membre';
         }
 
-        $message = "🤝{$actorName} {$verb} {$label} convenu entre vous. Consulte-le !🤲";
+        $suffix = $typeForRecipient === 'amana' ? 'Consulte-la !🤲' : 'Consulte-le !🤲';
+        $message = "🤝{$actorName} {$verb} {$label} convenu entre vous. {$suffix}";
         $data = [
             'view' => 'obligation_list_view',
             'type' => $typeForRecipient,
@@ -307,7 +308,7 @@ class NotificationService {
         return match ($type) {
             'onm' => 'Nouvel emprunt',
             'jed' => 'Nouveau prêt',
-            'amana' => 'Nouvelle amana',
+            'amana' => 'Nouvelle Amana',
             default => 'Nouvelle obligation',
         };
     }
