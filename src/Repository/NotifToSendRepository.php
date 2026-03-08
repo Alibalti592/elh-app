@@ -57,16 +57,38 @@ class NotifToSendRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
-    public function deletePrayNotifOfUser($user): int
+    public function deletePrayNotifOfUser($user, bool $pendingOnly = false): int
     {
-        return $this->createQueryBuilder('a')
+        $qb = $this->createQueryBuilder('a')
             ->delete()
             ->andWhere('a.user = :user')
             ->andWhere('a.view = :view')
             ->andWhere('a.type IN (:types)')
             ->setParameter('user', $user)
             ->setParameter('view', 'pray')
-            ->setParameter('types', self::PRAY_TYPES)
+            ->setParameter('types', self::PRAY_TYPES);
+
+        if ($pendingOnly) {
+            $qb
+                ->andWhere('a.status = :status')
+                ->setParameter('status', 'pending');
+        }
+
+        return $qb->getQuery()->execute();
+    }
+
+    public function deletePendingPrayNotifOfUserByKey($user, string $prayKey): int
+    {
+        return $this->createQueryBuilder('a')
+            ->delete()
+            ->andWhere('a.user = :user')
+            ->andWhere('a.view = :view')
+            ->andWhere('a.type = :type')
+            ->andWhere('a.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('view', 'pray')
+            ->setParameter('type', $prayKey)
+            ->setParameter('status', 'pending')
             ->getQuery()
             ->execute();
     }

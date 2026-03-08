@@ -61,7 +61,7 @@ class SendNotifCommand extends Command
             }
 
             if ($notifToSend->getView() === 'pray') {
-                if (!$this->claimNotif($notifToSend)) {
+                if (!$this->claimPrayNotifGroup($notifToSend)) {
                     continue;
                 }
             }
@@ -98,7 +98,7 @@ class SendNotifCommand extends Command
             );
 
             if ($notifToSend->getView() === 'pray') {
-                $this->entityManager->remove($notifToSend);
+                $this->cleanupPrayNotifGroup($notifToSend);
             } else {
                 $notifToSend->setStatus('sent');
                 $notifToSend->setIsRead(false);
@@ -126,5 +126,87 @@ class SendNotifCommand extends Command
             ->execute();
 
         return $updated === 1;
+    }
+
+    private function claimPrayNotifGroup(NotifToSend $notifToSend): bool
+    {
+        $dedupeKey = $notifToSend->getDedupeKey();
+        if (!is_null($dedupeKey) && $dedupeKey !== '') {
+            $qb = $this->entityManager->createQueryBuilder();
+            $updated = $qb
+                ->update(NotifToSend::class, 'n')
+                ->set('n.status', ':sending')
+                ->andWhere('n.dedupeKey = :dedupeKey')
+                ->andWhere('n.status = :pending')
+                ->setParameter('sending', 'sending')
+                ->setParameter('pending', 'pending')
+                ->setParameter('dedupeKey', $dedupeKey)
+                ->getQuery()
+                ->execute();
+
+            return $updated >= 1;
+        }
+
+        $user = $notifToSend->getUser();
+        $sendAt = $notifToSend->getSendAt();
+        $type = $notifToSend->getType();
+        if (is_null($user) || is_null($sendAt) || is_null($type)) {
+            return $this->claimNotif($notifToSend);
+        }
+
+        $qb = $this->entityManager->createQueryBuilder();
+        $updated = $qb
+            ->update(NotifToSend::class, 'n')
+            ->set('n.status', ':sending')
+            ->andWhere('n.user = :user')
+            ->andWhere('n.view = :view')
+            ->andWhere('n.type = :type')
+            ->andWhere('n.sendAt = :sendAt')
+            ->andWhere('n.status = :pending')
+            ->setParameter('sending', 'sending')
+            ->setParameter('pending', 'pending')
+            ->setParameter('user', $user)
+            ->setParameter('view', 'pray')
+            ->setParameter('type', $type)
+            ->setParameter('sendAt', $sendAt)
+            ->getQuery()
+            ->execute();
+
+        return $updated >= 1;
+    }
+
+    private function cleanupPrayNotifGroup(NotifToSend $notifToSend): void
+    {
+        $dedupeKey = $notifToSend->getDedupeKey();
+        if (!is_null($dedupeKey) && $dedupeKey !== '') {
+            $qb = $this->entityManager->createQueryBuilder();
+            $qb->delete(NotifToSend::class, 'n')
+                ->andWhere('n.dedupeKey = :dedupeKey')
+                ->setParameter('dedupeKey', $dedupeKey)
+                ->getQuery()
+                ->execute();
+            return;
+        }
+
+        $user = $notifToSend->getUser();
+        $sendAt = $notifToSend->getSendAt();
+        $type = $notifToSend->getType();
+        if (is_null($user) || is_null($sendAt) || is_null($type)) {
+            $this->entityManager->remove($notifToSend);
+            return;
+        }
+
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->delete(NotifToSend::class, 'n')
+            ->andWhere('n.user = :user')
+            ->andWhere('n.view = :view')
+            ->andWhere('n.type = :type')
+            ->andWhere('n.sendAt = :sendAt')
+            ->setParameter('user', $user)
+            ->setParameter('view', 'pray')
+            ->setParameter('type', $type)
+            ->setParameter('sendAt', $sendAt)
+            ->getQuery()
+            ->execute();
     }
 }
