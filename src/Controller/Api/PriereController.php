@@ -151,14 +151,9 @@ class PriereController extends AbstractController
         }
 
         try {
-            $existingNotifs = $this->entityManager->getRepository(NotifToSend::class)->findBy([
-                'user' => $currentUser,
-                'type' => $prayKey,
-                'view' => 'pray'
-            ]);
-            foreach ($existingNotifs as $notifToRemove) {
-                $this->entityManager->remove($notifToRemove);
-            }
+            $this->entityManager
+                ->getRepository(NotifToSend::class)
+                ->deletePendingPrayNotifOfUserByKey($currentUser, (string) $prayKey);
 
             if($sendNotif) {
                 $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser);
@@ -172,9 +167,15 @@ class PriereController extends AbstractController
                     }
                 }
                 if(!is_null($praytimeUI) && !is_null($sendTimestamp) && $sendTimestamp > time()) {
-                    $notifToSend = new NotifToSend();
-                    $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
-                    $this->entityManager->persist($notifToSend);
+                    $dedupeKey = NotifToSend::buildPrayDedupeKey($currentUser, (string) $praytimeUI['key'], (int) $sendTimestamp);
+                    $existing = $this->entityManager->getRepository(NotifToSend::class)->findOneBy([
+                        'dedupeKey' => $dedupeKey,
+                    ]);
+                    if(is_null($existing)) {
+                        $notifToSend = new NotifToSend();
+                        $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
+                        $this->entityManager->persist($notifToSend);
+                    }
                 }
             }
 

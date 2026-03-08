@@ -53,14 +53,12 @@ class AddPrayNotifCommand extends Command
             $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($prayNotif->getUser());
             //remove existing NotifToSend
             try {
-                $this->entityManager->getRepository(NotifToSend::class)->deletePrayNotifOfUser($currentUser);
+                $this->entityManager->getRepository(NotifToSend::class)->deletePrayNotifOfUser($currentUser, true);
                 foreach ($praytimesUI as $praytimeUI) {
                     if($praytimeUI['isNotified']) {
                         $sendTimestamp = ((int) $praytimeUI['timestamp']) - (60 * 15);
                         if ($sendTimestamp > time()) {
-                            $notifToSend = new NotifToSend();
-                            $notifToSend->setForPrayFromUI($currentUser, $praytimeUI);
-                            $this->entityManager->persist($notifToSend);
+                            $this->queuePrayNotifFromUI($currentUser, $praytimeUI);
                         }
                     }
                 }
@@ -71,5 +69,26 @@ class AddPrayNotifCommand extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    private function queuePrayNotifFromUI($user, array $praytimeUI): void
+    {
+        $sendTimestamp = ((int) ($praytimeUI['timestamp'] ?? 0)) - (60 * 15);
+        $prayKey = (string) ($praytimeUI['key'] ?? '');
+        if ($sendTimestamp <= time() || $prayKey === '') {
+            return;
+        }
+
+        $dedupeKey = NotifToSend::buildPrayDedupeKey($user, $prayKey, $sendTimestamp);
+        $existing = $this->entityManager->getRepository(NotifToSend::class)->findOneBy([
+            'dedupeKey' => $dedupeKey,
+        ]);
+        if (!is_null($existing)) {
+            return;
+        }
+
+        $notifToSend = new NotifToSend();
+        $notifToSend->setForPrayFromUI($user, $praytimeUI);
+        $this->entityManager->persist($notifToSend);
     }
 }
