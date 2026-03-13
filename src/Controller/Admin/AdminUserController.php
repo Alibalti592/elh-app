@@ -24,18 +24,23 @@ class AdminUserController extends AbstractController
     #[Route('/list-users', name: 'admin_user_list')]
     public function index(): Response
     {
-        //data top !
+        $now = new \DateTimeImmutable('now');
+        $monthStart = $now->modify('first day of this month')->setTime(0, 0, 0);
+        $previousMonthStart = $now->modify('first day of last month')->setTime(0, 0, 0);
+        $previousMonthEnd = $now->modify('last day of last month')->setTime(23, 59, 59);
+        $yearStart = $now->setDate((int) $now->format('Y'), 1, 1)->setTime(0, 0, 0);
+
         $countUsers = $this->entityManager->getRepository(User::class)->countUsers();
-        //month user
-        $dateEnd = new \DateTime('now');
-        $dateStart = new \DateTime('first day of this month');
-        $countUsersOfMonth = $this->entityManager->getRepository(User::class)->countUsersBetweenDates($dateStart, $dateEnd) ;
-        $dateEnd = new \DateTime('last day of last month');
-        $dateStart = new \DateTime('first day of last month');
-        $countUsersOfPreviousMonth = $this->entityManager->getRepository(User::class)->countUsersBetweenDates($dateStart, $dateEnd);
-        $dateEnd = new \DateTime('now');
-        $dateStart = new \DateTime('first day of January');
-        $countUsersOfYear = $this->entityManager->getRepository(User::class)->countUsersBetweenDates($dateStart, $dateEnd);
+        $countUsersOfMonth = $this->entityManager
+            ->getRepository(User::class)
+            ->countUsersBetweenDates($monthStart, $now);
+        $countUsersOfPreviousMonth = $this->entityManager
+            ->getRepository(User::class)
+            ->countUsersBetweenDates($previousMonthStart, $previousMonthEnd);
+        $countUsersOfYear = $this->entityManager
+            ->getRepository(User::class)
+            ->countUsersBetweenDates($yearStart, $now);
+
         return $this->render('admin/modules/users/list.twig', [
             'countUsers' => $countUsers,
             'countUsersOfMonth' => $countUsersOfMonth,
@@ -48,8 +53,9 @@ class AdminUserController extends AbstractController
     public function loadList(Request $request): Response
     {
         $crudParams = $this->CRUDService->getListParametersFromRequest($request);
-        $users = $this->entityManager->getRepository(User::class)->findListFiltered($crudParams);
-        $count = $this->entityManager->getRepository(User::class)->countListFiltered($crudParams);
+        $searchableFields = ['firstname', 'lastname', 'email', 'phone'];
+        $users = $this->entityManager->getRepository(User::class)->findListFiltered($crudParams, $searchableFields);
+        $count = $this->entityManager->getRepository(User::class)->countListFiltered($crudParams, $searchableFields);
         $userUIs = [];
         /** @var User $user */
         foreach ($users as $user) {
