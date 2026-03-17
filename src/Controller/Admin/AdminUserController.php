@@ -68,7 +68,9 @@ class AdminUserController extends AbstractController
             if(in_array('ROLE_ADMIN', $user->getRoles()))  {
                 $userUI['type'] .= " | Admin.";
             }
-            $userUI['lastLogin'] = $user->getLastLogin()->format('d/m/Y');
+            $userUI['lastActivity'] = !is_null($user->getLastLogin())
+                ? $user->getLastLogin()->format('d/m/Y H:i')
+                : '-';
             $userUI['enabled'] = $user->isEnabled();
             $userUIs[] = $userUI;
         }

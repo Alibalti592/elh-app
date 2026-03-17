@@ -69,8 +69,27 @@
           </div>
 
           <div class="form-group mt-3">
-            <label>Ville</label>
-            <SelectLocation :initialLocation="mosqueEdit.location" @updateLocation="setLocation"></SelectLocation>
+            <label>Adresse</label>
+            <SelectLocation
+              :initialLocation="mosqueEdit.location"
+              :adresse="true"
+              @updateLocation="setLocation"
+            ></SelectLocation>
+            <small class="form-text text-muted">
+              Sélectionne une adresse pour renseigner automatiquement la ville et les coordonnées.
+            </small>
+          </div>
+
+          <div
+            v-if="hasSelectedLocation"
+            class="form-group mt-2 p-3 rounded"
+            style="background: #faf6f1;"
+          >
+            <div><strong>Ville :</strong> {{ mosqueEdit.location.city }}</div>
+            <div><strong>Code postal :</strong> {{ mosqueEdit.location.postcode }}</div>
+            <div><strong>Région :</strong> {{ mosqueEdit.location.region }}</div>
+            <div><strong>Latitude :</strong> {{ mosqueEdit.location.lat }}</div>
+            <div><strong>Longitude :</strong> {{ mosqueEdit.location.lng }}</div>
           </div>
 
           <div class="form-group mt-3">
@@ -187,6 +206,15 @@ export default {
       mosqueIni: null,
       mosqueEdit: null,
       mosqueSaving: false,
+    }
+  },
+
+  computed: {
+    hasSelectedLocation() {
+      return this.mosqueEdit != null
+        && this.mosqueEdit.location != null
+        && this.mosqueEdit.location.label != null
+        && this.mosqueEdit.location.label !== "";
     }
   },
 
