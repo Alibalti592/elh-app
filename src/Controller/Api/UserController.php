@@ -38,6 +38,26 @@ class UserController extends AbstractController
         return $jsonReponse;
     }
 
+    #[Route('/touch-last-activity', methods: ['POST'])]
+    public function touchLastActivity(): JsonResponse
+    {
+        /** @var User|null $user */
+        $user = $this->getUser();
+        if (is_null($user)) {
+            return new JsonResponse([
+                'message' => 'Utilisateur non authentifié.'
+            ], 401);
+        }
+
+        $user->setLastLogin(new \DateTime());
+        $this->entityManager->persist($user);
+        $this->entityManager->flush();
+
+        return new JsonResponse([
+            'updatedAt' => $user->getLastLogin()?->format('c')
+        ]);
+    }
+
     #[Route('/user-registration', methods: ['POST'])]
     public function userRegistrationAction(Request $request,UserPasswordHasherInterface $userPasswordHasher) {
         $data = json_decode($request->getContent());

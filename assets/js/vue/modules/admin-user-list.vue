@@ -135,9 +135,8 @@ export default {
           sortable: false,
         },
         {
-          name: 'lastLogin',
-          // customHeader: 'createdHeader',
-          label: 'Dernière connexion',
+          name: 'lastActivity',
+          label: 'Dernière activité',
           sortable: false,
         },
         {

@@ -59,6 +59,9 @@ export default {
       if(location.label == null) {
         return "";
       }
+      if(this.adresse) {
+        return location.label;
+      }
       return location.label+ " - " +location.region;
     },
     searchLocations(search) {
