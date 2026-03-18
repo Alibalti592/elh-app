@@ -80,18 +80,6 @@
             </small>
           </div>
 
-          <div
-            v-if="hasSelectedLocation"
-            class="form-group mt-2 p-3 rounded"
-            style="background: #faf6f1;"
-          >
-            <div><strong>Ville :</strong> {{ mosqueEdit.location.city }}</div>
-            <div><strong>Code postal :</strong> {{ mosqueEdit.location.postcode }}</div>
-            <div><strong>Région :</strong> {{ mosqueEdit.location.region }}</div>
-            <div><strong>Latitude :</strong> {{ mosqueEdit.location.lat }}</div>
-            <div><strong>Longitude :</strong> {{ mosqueEdit.location.lng }}</div>
-          </div>
-
           <div class="form-group mt-3">
             <label>Gestionnaire</label>
             <BbSelectUser :initial-user="mosqueEdit.managedBy" @updateUser="setManagedBy"></BbSelectUser>
@@ -206,15 +194,6 @@ export default {
       mosqueIni: null,
       mosqueEdit: null,
       mosqueSaving: false,
-    }
-  },
-
-  computed: {
-    hasSelectedLocation() {
-      return this.mosqueEdit != null
-        && this.mosqueEdit.location != null
-        && this.mosqueEdit.location.label != null
-        && this.mosqueEdit.location.label !== "";
     }
   },
 
