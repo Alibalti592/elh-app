@@ -220,54 +220,118 @@ class LayoutController extends AbstractController
     #[IsGranted('ROLE_ADMIN')]
     public function searchLocations(Request $request): Response
     {
-        $ch = curl_init();
         try {
-            $search = urlencode($request->get('search'));
-            $params = "type=municipality";
-            if($request->get('adresse') === 'true') {
-                $params = "";
+            $rawSearch = trim((string) $request->get('search', ''));
+            if ($rawSearch === '') {
+                return new JsonResponse(['locations' => []]);
             }
-            curl_setopt($ch, CURLOPT_URL, "https://api-adresse.data.gouv.fr/search/?q=$search&$params");
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); //not print
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Accept: application/json'));
-            $response = curl_exec($ch);
-            $results = json_decode($response, true);
-            if (curl_errno($ch)) {
-             throw new \ErrorException();
-            }
-            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            if($http_code == intval(200)){
+
+            $isAddressSearch = $request->get('adresse') === 'true';
+            $normalizedSearch = preg_replace('/\s+/', ' ', preg_replace('/\s*\([^)]*\)/', '', $rawSearch));
+            $normalizedSearch = trim((string) $normalizedSearch);
+
+            $fetchResults = static function (array $queryParams): array {
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, 'https://api-adresse.data.gouv.fr/search/?' . http_build_query($queryParams));
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
+                $response = curl_exec($ch);
+                if (curl_errno($ch)) {
+                    curl_close($ch);
+                    throw new \ErrorException();
+                }
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 curl_close($ch);
-                $jsonResponse = new JsonResponse();
-                //build locations
-                $locations = [];
-                foreach ($results["features"] as $result) {
-                    $properties = $result['properties'];
-                    $geometry = $result['geometry'];
-                    $locations[] = [
-                        'label' => $properties['label'],
-                        'postcode' => $properties['postcode'],
-                        'city' => $properties['city'],
-                        'region' => $properties['context'],
-                        'lat' => floatval($geometry['coordinates'][1]),
-                        'lng' =>  floatval($geometry['coordinates'][0]),
-                        'adress' =>  $properties['name'],
+                if ($httpCode !== 200) {
+                    throw new \ErrorException();
+                }
+
+                $decoded = json_decode((string) $response, true);
+                return is_array($decoded['features'] ?? null) ? $decoded['features'] : [];
+            };
+
+            $queries = [];
+            if ($isAddressSearch) {
+                $queries[] = [
+                    'q' => $normalizedSearch,
+                    'autocomplete' => 1,
+                    'limit' => 10,
+                    'type' => 'housenumber',
+                ];
+                $queries[] = [
+                    'q' => $normalizedSearch,
+                    'autocomplete' => 1,
+                    'limit' => 10,
+                    'type' => 'street',
+                ];
+                $queries[] = [
+                    'q' => $normalizedSearch,
+                    'autocomplete' => 1,
+                    'limit' => 10,
+                ];
+
+                $searchWithoutLeadingNumber = trim((string) preg_replace('/^\d+\s*/', '', $normalizedSearch));
+                if ($searchWithoutLeadingNumber !== '' && $searchWithoutLeadingNumber !== $normalizedSearch) {
+                    $queries[] = [
+                        'q' => $searchWithoutLeadingNumber,
+                        'autocomplete' => 1,
+                        'limit' => 10,
+                        'type' => 'street',
+                    ];
+                    $queries[] = [
+                        'q' => $searchWithoutLeadingNumber,
+                        'autocomplete' => 1,
+                        'limit' => 10,
                     ];
                 }
-                $jsonResponse->setData([
-                    'locations' => $locations
-                ]);
-                return $jsonResponse;
             } else {
-                throw new \ErrorException();
+                $queries[] = [
+                    'q' => $normalizedSearch,
+                    'type' => 'municipality',
+                    'autocomplete' => 1,
+                    'limit' => 10,
+                ];
             }
+
+            $seenLabels = [];
+            $locations = [];
+
+            foreach ($queries as $queryParams) {
+                $features = $fetchResults($queryParams);
+                foreach ($features as $result) {
+                    $properties = $result['properties'] ?? [];
+                    $geometry = $result['geometry'] ?? [];
+                    $coordinates = $geometry['coordinates'] ?? null;
+                    $label = trim((string) ($properties['label'] ?? ''));
+                    if ($label === '' || isset($seenLabels[$label]) || !is_array($coordinates) || count($coordinates) < 2) {
+                        continue;
+                    }
+
+                    $seenLabels[$label] = true;
+                    $locations[] = [
+                        'label' => $label,
+                        'postcode' => $properties['postcode'] ?? '',
+                        'city' => $properties['city'] ?? '',
+                        'region' => $properties['context'] ?? '',
+                        'lat' => floatval($coordinates[1]),
+                        'lng' => floatval($coordinates[0]),
+                        'adress' => $properties['name'] ?? '',
+                    ];
+                }
+
+                if (!empty($locations)) {
+                    break;
+                }
+            }
+
+            return new JsonResponse([
+                'locations' => $locations
+            ]);
         } catch (\Throwable $th) {
             $jsonResponse = new JsonResponse();
             $jsonResponse->setStatusCode(500);
             $jsonResponse->setData(['message' => "impossible de récupérer l'adresse"]);
             return $jsonResponse;
-        } finally {
-            curl_close($ch);
         }
     }
 
