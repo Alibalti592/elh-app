@@ -70,13 +70,15 @@
 
           <div class="form-group mt-3">
             <label>Adresse</label>
-            <SelectLocation
-              :initialLocation="mosqueEdit.location"
-              :adresse="true"
-              @updateLocation="setLocation"
-            ></SelectLocation>
+            <input
+              type="text"
+              class="form-control"
+              v-model="mosqueEdit.location.label"
+              placeholder="Saisis l'adresse complète de la mosquée"
+              required
+            >
             <small class="form-text text-muted">
-              Sélectionne une adresse pour renseigner automatiquement la ville et les coordonnées.
+              Saisis l'adresse complète. Les coordonnées GPS seront récupérées automatiquement à l'enregistrement.
             </small>
           </div>
 
@@ -119,14 +121,12 @@ import Loading from "@/components/loading";
 import CKEditor from '@ckeditor/ckeditor5-vue';
 import  ClassicEditor  from '@ckeditor/ckeditor5-build-classic';
 import {ArrayObjectService} from '@/services/ArrayObject';
-import SelectLocation from "@/components/location.vue";
 import BbSelectUser from "@/components/select-user.vue";
 
 export default {
   name: 'admin-mosque-list',
   components: {
     BbSelectUser,
-    SelectLocation,
     Loading,
     DataTable,
     ItemsPerPageDropdown,
@@ -217,12 +217,30 @@ export default {
     addNewMosque() {
       this.mosqueSaving = false;
       this.mosqueEdit = ArrayObjectService.cloneOject(this.mosqueIni);
+      this.prepareLocationInput();
       this.$refs.modalMosque.openModal();
     },
     editMOSQUE(mosque) {
       this.mosqueSaving = false;
       this.mosqueEdit = ArrayObjectService.cloneOject(mosque);
+      this.prepareLocationInput();
       this.$refs.modalMosque.openModal();
+    },
+    prepareLocationInput() {
+      if (this.mosqueEdit.location == null) {
+        this.mosqueEdit.location = {};
+      }
+      const currentLabel = (this.mosqueEdit.location.label || "").trim();
+      if (currentLabel !== "") {
+        return;
+      }
+      const parts = [
+        this.mosqueEdit.location.adress,
+        this.mosqueEdit.location.postcode,
+        this.mosqueEdit.location.city,
+        this.mosqueEdit.location.country,
+      ].filter((value) => value != null && value !== "");
+      this.mosqueEdit.location.label = parts.join(' ').trim();
     },
     saveMOSQUE(e) {
       e.preventDefault();
@@ -239,9 +257,6 @@ export default {
         self.mosqueSaving = false;
         messageService.showMessageFromResponse(error.response);
       });
-    },
-    setLocation(location) {
-      this.mosqueEdit.location = location;
     },
     setManagedBy(user) {
       this.mosqueEdit.managedBy = user;
