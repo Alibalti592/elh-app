@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class AdminMosqueController extends AbstractController
 {
+    private const GOOGLE_MAPS_API_KEY = 'AIzaSyC2t8GvZFa6Ld6fbKM6_m2n3M0JoOmI03w';
 
     public function __construct(private readonly EntityManagerInterface $entityManager, private readonly UtilsService $utilsService,
                                 private readonly CRUDService $CRUDService, private readonly MosqueUI $mosqueUI) {}
@@ -112,14 +113,9 @@ class AdminMosqueController extends AbstractController
             throw new \InvalidArgumentException("Merci de saisir l'adresse complète de la mosquée.");
         }
 
-        $googleApiKey = $_ENV['GOOGLE_MAPS_API_KEY'] ?? getenv('GOOGLE_MAPS_API_KEY') ?: '';
-        if ($googleApiKey === '') {
-            throw new \RuntimeException("La clé Google Maps n'est pas configurée.");
-        }
-
         $url = 'https://maps.googleapis.com/maps/api/geocode/json?' . http_build_query([
             'address' => $fullAddress,
-            'key' => $googleApiKey,
+            'key' => self::GOOGLE_MAPS_API_KEY,
         ]);
 
         $ch = curl_init();
