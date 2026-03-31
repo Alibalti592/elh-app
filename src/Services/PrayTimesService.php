@@ -474,7 +474,12 @@ class PrayTimesService
             }
         }
 
-        return new \DateTimeZone('Etc/GMT-1');
+        $countryKey = $this->normalizeLocationKey($location->getCountry());
+        if ($countryKey === 'france') {
+            return new \DateTimeZone('Europe/Paris');
+        }
+
+        return new \DateTimeZone('Etc/GMT-2');
     }
 
     public function getLastResolvedCityKey(): ?string
