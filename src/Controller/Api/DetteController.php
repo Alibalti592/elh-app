@@ -91,6 +91,45 @@ public function loadDettes(Request $request): Response
     ]);
 }
 
+#[Route('/load-obligation')]
+public function loadObligation(Request $request): Response
+{
+    $currentUser = $this->getUser();
+    if (!$currentUser) {
+        return new JsonResponse(['error' => 'Utilisateur non authentifié'], 401);
+    }
+
+    $obligationId = (int) $request->get('obligationId');
+    if ($obligationId <= 0) {
+        return new JsonResponse(['error' => 'obligationId manquant'], 400);
+    }
+
+    $obligation = $this->entityManager
+        ->getRepository(Obligation::class)
+        ->findObligationCanRefund($currentUser, $obligationId);
+
+    if (!$obligation) {
+        return new JsonResponse(['error' => 'Obligation introuvable'], 404);
+    }
+
+    $obligationUI = $this->obligationUI->getObligation(
+        $obligation,
+        true,
+        $currentUser,
+        $currentUser
+    );
+
+    $remaining = $obligation->getRemainingAmount();
+    $obligationUI['remainingAmount'] =
+        $remaining !== null ? $remaining : (float) $obligation->getAmount();
+    $obligationUI['amount'] = (float) $obligation->getAmount();
+    $obligationUI['fileUrl'] = $obligation->getFileUrl() ?? null;
+
+    return new JsonResponse([
+        'obligation' => $obligationUI,
+    ]);
+}
+
 
 #[Route('/save-dette', methods: ['POST'])]
     public function saveObligation(

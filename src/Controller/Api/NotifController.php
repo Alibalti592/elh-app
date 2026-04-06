@@ -145,6 +145,7 @@ class NotifController extends AbstractController
             }
             $newnotif->setDatas(json_encode([
                 'trancheId' => $tranche->getId(),
+                'obligationId' => $obligation->getId(),
                 'status'    => $tranche->getStatus()
             ], JSON_UNESCAPED_UNICODE));
             $newnotif->setUser($sendToUser);
@@ -158,7 +159,7 @@ class NotifController extends AbstractController
 
         return $this->json([
             'success'            => true,
-            'status'             => $notif->getStatus(),
+            'status'             => $tranche->getStatus(),
             'newRemainingAmount' => $newRemaining,
         ]);
     }
