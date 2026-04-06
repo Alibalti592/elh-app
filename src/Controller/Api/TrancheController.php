@@ -234,11 +234,19 @@ public function create(Request $request): JsonResponse
             if ($type === 'jed') {
                 $title = 'Un nouveau remboursement partiel a été ajouté';
                 $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
-                $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
+                $payload = [
+                    'trancheId' => $tranche->getId(),
+                    'obligationId' => $obligation->getId(),
+                    'status' => 'accept',
+                ];
             } else {
                 $title = 'Un nouveau remboursement partiel a été proposé';
                 $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
-                $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
+                $payload = [
+                    'trancheId' => $tranche->getId(),
+                    'obligationId' => $obligation->getId(),
+                    'actions' => ['accept','decline'],
+                ];
             }
         } else {
             // related user is acting
@@ -246,11 +254,19 @@ public function create(Request $request): JsonResponse
             if ($type === 'onm') {
                 $title = 'Un nouveau remboursement partiel a été ajouté';
                 $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
-                $payload = ['trancheId' => $tranche->getId(), 'status' => 'accept'];
+                $payload = [
+                    'trancheId' => $tranche->getId(),
+                    'obligationId' => $obligation->getId(),
+                    'status' => 'accept',
+                ];
             } else {
                 $title = 'Un nouveau remboursement partiel a été proposé';
                 $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
-                $payload = ['trancheId' => $tranche->getId(), 'actions' => ['accept','decline']];
+                $payload = [
+                    'trancheId' => $tranche->getId(),
+                    'obligationId' => $obligation->getId(),
+                    'actions' => ['accept','decline'],
+                ];
             }
         }
 
