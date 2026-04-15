@@ -2,6 +2,7 @@
 
 namespace App\Controller\Api;
 
+use App\Entity\Obligation;
 use App\Entity\NotifToSend;
 use App\Repository\NotifToSendRepository;
 use App\Repository\TrancheRepository;
@@ -17,6 +18,22 @@ class NotifController extends AbstractController
 {
     public function __construct(private FcmNotificationService $fcmNotificationService)
     {}
+
+    private function syncObligationRefundStatus(Obligation $obligation): void
+    {
+        $remainingAmount = $obligation->getRemainingAmount();
+        $remaining = $remainingAmount !== null
+            ? (float) $remainingAmount
+            : (float) $obligation->getAmount();
+
+        if ($remaining <= 0.00001) {
+            $obligation->setRemainingAmount(0.0);
+            $obligation->setStatus('refund');
+            return;
+        }
+
+        $obligation->setStatus('processing');
+    }
 
     private function markReadAndDelete(NotifToSend $notif, EntityManagerInterface $em): void
     {
@@ -107,13 +124,12 @@ class NotifController extends AbstractController
             $this->markReadAndDelete($notif, $em);
             $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
             $obligation->setRemainingAmount($newRemaining);
-            if ($newRemaining === 0.0) {
-                $obligation->setStatus('refund');
-            }
+            $this->syncObligationRefundStatus($obligation);
         } else {
             // decline
             $tranche->setStatus('refusée');
             $this->markReadAndDelete($notif, $em);
+            $this->syncObligationRefundStatus($obligation);
         }
 
         // build counter-party notif

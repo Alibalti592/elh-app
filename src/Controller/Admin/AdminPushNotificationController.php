@@ -24,6 +24,7 @@ class AdminPushNotificationController extends AbstractController
         'pompe_noitif_view' => 'Pompe funèbre',
         'shared_testament' => 'Testament partagé',
         'pray' => 'Prière',
+        'jeunramadan' => 'Jours de jeûne',
         'tranche' => 'Tranches',
         'feedback_view' => 'Avis / critiques',
     ];

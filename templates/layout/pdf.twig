@@ -6,17 +6,6 @@
 {% set fixe = testament.fixe|default('')|trim %}
 {% set goods = testament.goods|default('')|trim %}
 {% set lastwill = testament.lastwill|default('')|trim %}
-{% set jeunTextValue = jeunText|default('')|trim %}
-{% set jeunFirstToken = jeunTextValue != '' ? (jeunTextValue|split(' ')|first) : '' %}
-{% if jeunTotalRemaining is defined %}
-  {% set jeunRemaining = jeunTotalRemaining %}
-{% elseif jeunFirstToken matches '/^\d+$/' %}
-  {% set jeunRemaining = jeunFirstToken + 0 %}
-{% else %}
-  {% set jeunRemaining = 0 %}
-{% endif %}
-{% set jeunLabel = jeunRemaining > 1 ? 'jours' : 'jour' %}
-{% set jeunSummary = jeunRemaining > 0 ? jeunRemaining ~ ' ' ~ jeunLabel ~ ' à rattraper' : 'Aucun jour à rattraper' %}
 {% set hasFinancialDetails = jeds is not empty or onms is not empty or amanas is not empty %}
 <html lang="{{ htmlLocale }}">
 <head>
@@ -123,11 +112,6 @@
           margin-bottom: 0;
       }
 
-      .section-fasting {
-          page-break-inside: avoid;
-          break-inside: avoid;
-      }
-
       .section-heading {
           margin: 0 0 10px;
           font-size: 21px;
@@ -160,28 +144,6 @@
           background: #faf6f0;
           border: 1px solid #efe3d3;
           border-radius: 10px;
-      }
-
-      .fasting-box {
-          margin-top: 4px;
-          padding: 14px 16px;
-          text-align: center;
-          background: #faf6f0;
-          border: 1px solid #d7c3aa;
-          border-radius: 12px;
-          color: #374151;
-          font-size: 21px;
-          font-weight: 700;
-          line-height: 1.6;
-      }
-
-      .section-fasting .section-heading {
-          page-break-after: avoid;
-      }
-
-      .section-fasting .fasting-box {
-          margin-top: 0;
-          page-break-before: avoid;
       }
 
       .brand {
@@ -320,11 +282,6 @@
           <p class="field-label">Je souhaite laisser les recommandations suivantes :</p>
           <p class="field-value">{{ lastwill }}</p>
         </div>
-      </div>
-
-      <div class="section section-fasting">
-        <h2 class="section-heading">Jours de jeûne</h2>
-        <div class="fasting-box">{{ jeunSummary }}</div>
       </div>
 
       {% if hasFinancialDetails %}
