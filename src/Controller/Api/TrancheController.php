@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Kreait\Firebase\Factory;
 use Kreait\Firebase\Exception\FirebaseException;
 use App\Entity\User;
+use App\Entity\Obligation;
 use App\Services\FcmNotificationService;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/tranche')]
@@ -63,6 +64,22 @@ class TrancheController extends AbstractController
             $notif->setIsRead(true);
             $this->entityManager->remove($notif);
         }
+    }
+
+    private function syncObligationRefundStatus(Obligation $obligation): void
+    {
+        $remainingAmount = $obligation->getRemainingAmount();
+        $remaining = $remainingAmount !== null
+            ? (float) $remainingAmount
+            : (float) $obligation->getAmount();
+
+        if ($remaining <= 0.00001) {
+            $obligation->setRemainingAmount(0.0);
+            $obligation->setStatus('refund');
+            return;
+        }
+
+        $obligation->setStatus('processing');
     }
 
   
@@ -131,6 +148,26 @@ public function create(Request $request): JsonResponse
         return $this->json(['error' => 'Obligation introuvable'], 404);
     }
 
+    $rawAmount = is_string($data['amount'])
+        ? str_replace(',', '.', trim((string) $data['amount']))
+        : $data['amount'];
+    $requestedAmount = is_numeric($rawAmount) ? (float) $rawAmount : null;
+    if ($requestedAmount === null || $requestedAmount <= 0) {
+        return $this->json(['error' => 'Le montant du versement est invalide'], 400);
+    }
+
+    $remainingAmount = $obligation->getRemainingAmount();
+    $currentRemaining = $remainingAmount !== null
+        ? (float) $remainingAmount
+        : (float) $obligation->getAmount();
+    if ($requestedAmount - $currentRemaining > 0.00001) {
+        return $this->json([
+            'error' => 'Le montant du versement dépasse le montant restant à rembourser',
+            'remainingAmount' => $currentRemaining,
+            'trancheAmount' => $requestedAmount,
+        ], 400);
+    }
+
     // ---------- 3) Optional file upload (part name: "file") ----------
     /** @var UploadedFile|null $uploadedFile */
     $uploadedFile = $request->files->get('file');
@@ -160,7 +197,7 @@ public function create(Request $request): JsonResponse
     // ---------- 4) Create Tranche ----------
     $tranche = new \App\Entity\Tranche();
     $tranche->setObligation($obligation);
-    $tranche->setAmount((float)$data['amount']);
+    $tranche->setAmount($requestedAmount);
     if ($currentUser instanceof User) {
         // garde la trace de l'utilisateur ayant saisi le versement
         $tranche->setEmprunteur($currentUser);
@@ -183,25 +220,19 @@ public function create(Request $request): JsonResponse
     // set tranche status + update remainingAmount
     if (!$relatedToEntity) {
         $tranche->setStatus('validée');
-        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $newRemaining = max(0, $currentRemaining - (float)$tranche->getAmount());
         $obligation->setRemainingAmount($newRemaining);
-        if ($newRemaining <= 0) {
-            $obligation->setStatus('refund');
-        }
+        $this->syncObligationRefundStatus($obligation);
     } elseif ($obligationCreator && $currentUser && $currentUser->getId() === $obligationCreator->getId() && $type === 'jed') {
         $tranche->setStatus('validée');
-        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $newRemaining = max(0, $currentRemaining - (float)$tranche->getAmount());
         $obligation->setRemainingAmount($newRemaining);
-        if ($newRemaining <= 0) {
-            $obligation->setStatus('refund');
-        }
+        $this->syncObligationRefundStatus($obligation);
     } elseif ($obligationCreator && $relatedToEntity && $currentUser && $currentUser->getId() === $relatedToEntity->getId() && $type === 'onm') {
         $tranche->setStatus('validée');
-        $newRemaining = max(0, (float)$obligation->getRemainingAmount() - (float)$tranche->getAmount());
+        $newRemaining = max(0, $currentRemaining - (float)$tranche->getAmount());
         $obligation->setRemainingAmount($newRemaining);
-        if ($newRemaining <= 0) {
-            $obligation->setStatus('refund');
-        }
+        $this->syncObligationRefundStatus($obligation);
     } else {
         $tranche->setStatus('en attente');
     }
@@ -393,11 +424,10 @@ public function create(Request $request): JsonResponse
 
             $tranche->setStatus('tranche accepte');
             $obligation->setRemainingAmount($newRemainingAmount);
-            if ($newRemainingAmount == 0.0) {
-                $obligation->setStatus('refund');
-            }
+            $this->syncObligationRefundStatus($obligation);
         } elseif ($response === 'decline') {
             $tranche->setStatus('tranche refuse');
+            $this->syncObligationRefundStatus($obligation);
         } else {
             return $this->json(['error' => 'Réponse invalide'], 400);
         }
@@ -587,6 +617,7 @@ public function update(Request $request, int $id): JsonResponse
             $total = (float)$obligation->getAmount();
             $newRemaining = max(0, $total - $sumPaid);
             $obligation->setRemainingAmount($newRemaining);
+            $this->syncObligationRefundStatus($obligation);
         } else {
             // fallback delta approach
             $oldAmount = (float)$oldAmount;
@@ -607,6 +638,7 @@ public function update(Request $request, int $id): JsonResponse
                 }
             }
             $obligation->setRemainingAmount($remaining);
+            $this->syncObligationRefundStatus($obligation);
         }
     } else {
         // fallback delta-only logic
@@ -629,6 +661,7 @@ public function update(Request $request, int $id): JsonResponse
         }
 
         $obligation->setRemainingAmount($remaining);
+        $this->syncObligationRefundStatus($obligation);
     }
 
     $this->entityManager->flush();
@@ -707,6 +740,7 @@ public function delete(int $id): JsonResponse
     if (in_array($status, $reductionStatuses, true)) {
         $obligation->setRemainingAmount($obligation->getRemainingAmount() + $amount);
     }
+    $this->syncObligationRefundStatus($obligation);
 
     // adjust totalAmount of obligation
     if (method_exists($obligation, 'getTotalAmount') && method_exists($obligation, 'setTotalAmount')) {
