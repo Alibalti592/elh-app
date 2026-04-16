@@ -686,6 +686,7 @@ public function update(Request $request, int $id): JsonResponse
         $notif->setMessage("Un versement lié à {$fromUser->getFirstName()} {$fromUser->getLastName()} a été mis à jour.");
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
+            'obligationId' => $obligation->getId(),
             'status' => $tranche->getStatus()
         ]));
         $notif->setStatus('pending');
@@ -770,6 +771,7 @@ public function delete(int $id): JsonResponse
         $notif->setMessage("Un versement a été supprimé par {$fromUser->getFirstName()} {$fromUser->getLastName()}.");
         $notif->setDatas(json_encode([
             'trancheId' => $tranche->getId(),
+            'obligationId' => $obligation->getId(),
             'status' => $tranche->getStatus()
         ]));
         $notif->setSendAt(new \DateTime());
