@@ -282,6 +282,9 @@ class NotificationService
             'view' => 'obligation_list_view',
             'type' => $typeForRecipient,
         ];
+        if ($action !== 'delete' && $obligation->getId() !== null) {
+            $data['obligationId'] = $obligation->getId();
+        }
 
         try {
             $this->createSentNotif($sendToUser, $title, $message, $data['view'], "obligation_{$action}", $data);
@@ -484,6 +487,9 @@ class NotificationService
             'type' => $typeForRecipient,
             'tab' => 'refund',
         ];
+        if ($obligation->getId() !== null) {
+            $data['obligationId'] = $obligation->getId();
+        }
 
         $this->createSentNotif($userToNotif, $title, $message, $data['view'], 'obligation_refund', $data);
         $this->fcmNotificationService->sendFcmDefaultNotification($userToNotif, $title, $message, $data);
