@@ -116,6 +116,34 @@ public function setFileUrl(?string $fileUrl): self
     $this->remainingAmount = number_format($remainingAmount, 2, '.', '');
     return $this;
 }
+
+public function calculateRemainingAmountFromTranches(): float
+{
+    $amount = (float) $this->getAmount();
+    $paidAmount = 0.0;
+
+    foreach ($this->tranches as $tranche) {
+        if ($this->isReducingTrancheStatus($tranche->getStatus())) {
+            $paidAmount += (float) $tranche->getAmount();
+        }
+    }
+
+    return max(0.0, $amount - $paidAmount);
+}
+
+private function isReducingTrancheStatus(?string $status): bool
+{
+    $normalized = strtolower(trim((string) $status));
+
+    return in_array($normalized, [
+        'validée',
+        'validee',
+        'validé',
+        'valide',
+        'tranche accepte',
+        'tranche acceptée',
+    ], true);
+}
     public function getFirstname(): string { return $this->firstname ?? ""; }
     public function setFirstname(?string $firstname): static { $this->firstname = $firstname; return $this; }
 
@@ -181,7 +209,9 @@ public function setFileUrl(?string $fileUrl): self
         }
         $this->adress = $datas['adress'] ?? null;
         $this->amount = $this->transformToFloat($datas['amount'] ?? '0');
-        $this->remainingAmount = $this->transformToFloat($datas['amount'] ?? '0');
+        $this->remainingAmount = $isEdit
+            ? ($this->getStatus() === 'refund' ? 0.0 : $this->calculateRemainingAmountFromTranches())
+            : $this->transformToFloat($datas['amount'] ?? '0');
         $this->raison = $datas['raison'] ?? null;
         $this->date = isset($datas['date']) ? new \DateTime($datas['date']) : null;
         $this->delay = $datas['delay'] ?? null;

@@ -34,6 +34,32 @@ class DetteController extends AbstractController
                                 private readonly CRUDService $CRUDService, private readonly ObligationUI $obligationUI,
                                 private readonly RelationUI $relationUI, private readonly NotificationService $notificationService) {}
 
+private function getAccurateRemainingAmount(Obligation $obligation): float
+{
+    if ($obligation->getStatus() === 'refund') {
+        return 0.0;
+    }
+
+    return $obligation->calculateRemainingAmountFromTranches();
+}
+
+private function syncRemainingAmountIfNeeded(Obligation $obligation, float $remainingAmount): bool
+{
+    $currentRemaining = $obligation->getRemainingAmount();
+    $hasChanged = $currentRemaining === null || abs($currentRemaining - $remainingAmount) > 0.009;
+
+    if ($hasChanged) {
+        $obligation->setRemainingAmount($remainingAmount);
+    }
+
+    if ($remainingAmount <= 0.00001 && $obligation->getStatus() !== 'refund') {
+        $obligation->setStatus('refund');
+        $hasChanged = true;
+    }
+
+    return $hasChanged;
+}
+
 #[Route('/load-dettes')]
 public function loadDettes(Request $request): Response
 {
@@ -56,13 +82,17 @@ public function loadDettes(Request $request): Response
 
     $totalAmount = 0;
     $obligationUIs = [];
+    $shouldFlush = false;
 
     foreach ($obligations as $obligation) {
-        $obUI = $this->obligationUI->getObligation($obligation, true, $currentUser);
+        $remainingForUI = $this->getAccurateRemainingAmount($obligation);
+        $shouldFlush = $this->syncRemainingAmountIfNeeded($obligation, $remainingForUI) || $shouldFlush;
 
-    $rem = $obligation->getRemainingAmount(); // may be null
-    // Fallback to original amount if remaining is null
-    $remainingForUI = $rem !== null ? $rem : (float) $obligation->getAmount();
+        if ($filter === 'processing' && $remainingForUI <= 0.00001) {
+            continue;
+        }
+
+        $obUI = $this->obligationUI->getObligation($obligation, true, $currentUser);
 
     // expose both
     $obUI['remainingAmount'] = $remainingForUI;
@@ -70,8 +100,10 @@ public function loadDettes(Request $request): Response
 
     $obUI['fileUrl'] = $obligation->getFileUrl() ?? null;
 
-    if ($filter === 'processing' || $filter === 'refund') {
+    if ($filter === 'processing') {
         $totalAmount += $remainingForUI;
+    } elseif ($filter === 'refund') {
+        $totalAmount += (float) $obligation->getAmount();
     }
 
     $obligationUIs[] = $obUI;
@@ -82,6 +114,10 @@ public function loadDettes(Request $request): Response
         $obUI = $this->obligationUI->getObligation($obligation, false);
         $obUI['fileUrl'] = $obligation->getFileUrl() ?? null;
         $obligationSharedUIs[] = $obUI;
+    }
+
+    if ($shouldFlush) {
+        $this->entityManager->flush();
     }
 
     return new JsonResponse([
@@ -119,9 +155,12 @@ public function loadObligation(Request $request): Response
         $currentUser
     );
 
-    $remaining = $obligation->getRemainingAmount();
-    $obligationUI['remainingAmount'] =
-        $remaining !== null ? $remaining : (float) $obligation->getAmount();
+    $remaining = $this->getAccurateRemainingAmount($obligation);
+    if ($this->syncRemainingAmountIfNeeded($obligation, $remaining)) {
+        $this->entityManager->flush();
+    }
+
+    $obligationUI['remainingAmount'] = $remaining;
     $obligationUI['amount'] = (float) $obligation->getAmount();
     $obligationUI['fileUrl'] = $obligation->getFileUrl() ?? null;
 
