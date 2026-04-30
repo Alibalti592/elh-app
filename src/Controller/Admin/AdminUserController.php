@@ -12,6 +12,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -147,5 +148,39 @@ class AdminUserController extends AbstractController
         $jsonResponse = new JsonResponse();
         $this->userService->deleteUserAccount($user);
         return $jsonResponse;
+    }
+
+    #[Route('/export-csv-users', name: 'admin_user_export_csv')]
+    public function exportCsv(): Response
+    {
+        $users = $this->entityManager->getRepository(User::class)->findAll();
+
+        $response = new StreamedResponse(function () use ($users) {
+            $handle = fopen('php://output', 'w');
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($handle, ['ID', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Date d\'inscription', 'Dernière connexion', 'Statut', 'Activé'], ';');
+
+            foreach ($users as $user) {
+                fputcsv($handle, [
+                    $user->getId(),
+                    $user->getFirstname(),
+                    $user->getLastname(),
+                    $user->getEmail(),
+                    $user->getPhone(),
+                    $user->getCreateAt() ? $user->getCreateAt()->format('d/m/Y H:i') : '-',
+                    $user->getLastLogin() ? $user->getLastLogin()->format('d/m/Y H:i') : '-',
+                    $user->getStatus(),
+                    $user->isEnabled() ? 'Oui' : 'Non',
+                ], ';');
+            }
+            fclose($handle);
+        });
+
+        $response->headers->set('Content-Type', 'text/csv');
+        $response->headers->set('Content-Disposition', 'attachment; filename="users_export.csv"');
+
+        return $response;
     }
 }
