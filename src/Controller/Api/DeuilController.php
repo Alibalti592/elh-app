@@ -52,28 +52,40 @@ class DeuilController extends AbstractController
     public function loadDeuildate(Request $request): Response
     {
         $type = $request->get('type');
-        $endDateNormal = new \DateTime($request->get('date'));
-        $endDateNormal->modify('+3 days');
-        $endDate2Display = $this->utilsService->getReadableDate($endDateNormal);
-
-        //date epouse 4 mois et 10j
-        $endDate = new \DateTime($request->get('date'));
-        $endDate->modify('+128 days');
-
+        $dateParam = $request->get('date');
         $deuil = $this->entityManager->getRepository(Deuil::class)->loadDeuil($type);
-        $endDateDisplay = $this->utilsService->getReadableDate($endDate);
-        $basetext = $this->utilsService->htmlDecode($deuil->getContent());
-        $content = str_replace("{date_plus_trois_jour}", $endDate2Display, $basetext);
-        $content = str_replace("{datefin}", $endDateDisplay, $content);
-        $jsonResponse = new JsonResponse();
+        $content = $this->utilsService->htmlDecode($deuil->getContent());
+        
         $ref = time();
-        $endDateToSave = $endDate;
-        if($type == 'family') {
-            $endDateToSave = $endDateNormal;
+        $endDateToSaveFormat = "";
+
+        if (!empty($dateParam) && $dateParam !== 'none') {
+            $endDateNormal = new \DateTime($dateParam);
+            $endDateNormal->modify('+3 days');
+            $endDate2Display = $this->utilsService->getReadableDate($endDateNormal);
+
+            //date epouse 4 mois et 10j
+            $endDate = new \DateTime($dateParam);
+            $endDate->modify('+128 days');
+
+            $endDateDisplay = $this->utilsService->getReadableDate($endDate);
+            $content = str_replace("{date_plus_trois_jour}", $endDate2Display, $content);
+            $content = str_replace("{datefin}", $endDateDisplay, $content);
+            
+            $endDateToSave = $endDate;
+            if($type == 'family') {
+                $endDateToSave = $endDateNormal;
+            }
+            $endDateToSaveFormat = $endDateToSave->format("d/m/Y");
+        } else {
+            $content = str_replace("{date_plus_trois_jour}", "...", $content);
+            $content = str_replace("{datefin}", "...", $content);
         }
+
+        $jsonResponse = new JsonResponse();
         $jsonResponse->setData([
             'content' => $content,
-            'endDate' => $endDateToSave->format("d/m/Y"),
+            'endDate' => $endDateToSaveFormat,
             'ref' => $ref
         ]);
         return $jsonResponse;
