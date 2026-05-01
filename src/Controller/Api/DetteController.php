@@ -103,7 +103,9 @@ public function loadDettes(Request $request): Response
     if ($filter === 'processing') {
         $totalAmount += $remainingForUI;
     } elseif ($filter === 'refund') {
-        $totalAmount += (float) $obligation->getAmount();
+        $amountValue = trim((string) $obligation->getAmount());
+        $amountValue = str_replace(',', '.', $amountValue);
+        $totalAmount += is_numeric($amountValue) ? (float) $amountValue : 0.0;
     }
 
     $obligationUIs[] = $obUI;
