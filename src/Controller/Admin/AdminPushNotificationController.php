@@ -16,17 +16,38 @@ class AdminPushNotificationController extends AbstractController
 {
     private const VIEW_OPTIONS = [
         '' => 'Aucune redirection',
-        'chatview' => 'Chat',
-        'obligation_list_view' => 'Dettes / Obligations',
-        'carte_list_view' => 'Cartes',
-        'pardon_view' => 'Pardon',
-        'mosque_notif_view' => 'Mosquée',
-        'pompe_noitif_view' => 'Pompe funèbre',
-        'shared_testament' => 'Testament partagé',
-        'pray' => 'Prière',
-        'jeunramadan' => 'Jours de jeûne',
-        'tranche' => 'Tranches',
-        'feedback_view' => 'Avis / critiques',
+        // ── Principales ──
+        'home_view' => '🏠 Accueil',
+        'pray' => '🕌 Prière (Accueil)',
+        'priere_view' => '🕌 Prière (page dédiée)',
+        'qiblah_view' => '🧭 Direction de la Qibla',
+        // ── Social ──
+        'chatview' => '💬 Chat',
+        'new_friend' => '👥 Relations / Amis',
+        // ── Finances ──
+        'obligation_list_view' => '💰 Dettes (Je dois)',
+        'jed_view' => '💰 Dettes (On me doit)',
+        'amana_view' => '🔑 Amanas',
+        'tranche' => '📋 Tranches / versements',
+        // ── Testament ──
+        'my_testament_view' => '📜 Mon Testament',
+        'shared_testament' => '📜 Testament partagé',
+        'jeunramadan' => '🌙 Jours de jeûne à rattraper',
+        // ── Deuil ──
+        'deuil_view' => '🕊️ Calcul de la période de deuil',
+        // ── Mosquée & Salat ──
+        'mosque_notif_view' => '🕌 Mosquée',
+        'salat_view' => '📿 Mes Salats',
+        // ── Don ──
+        'don_view' => '❤️ Faire un don',
+        // ── Cartes & Pardon ──
+        'carte_list_view' => '🎴 Cartes',
+        'pardon_view' => '🤲 Pardon / Décès',
+        // ── Autres ──
+        'pompe_noitif_view' => '🏥 Pompe funèbre',
+        'maraude_view' => '🤝 Maraude',
+        'todo_view' => '✅ Todo / Tâches',
+        'feedback_view' => '⭐ Avis / Critiques',
     ];
 
     public function __construct(private readonly EntityManagerInterface $entityManager)
