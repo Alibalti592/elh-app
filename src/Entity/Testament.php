@@ -62,6 +62,7 @@ class Testament
         $this->toilette = $datas['toilette'];
         $this->fixe = $datas['fixe'];
         $this->lastwill = $datas['lastwill'];
+        $this->updateAt = new \DateTime(); // mise à jour de la date de modification
     }
 
     public function getId(): ?int
