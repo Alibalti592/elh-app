@@ -54,6 +54,15 @@ class DeuilController extends AbstractController
         $type = $request->get('type');
         $dateParam = $request->get('date');
         $deuil = $this->entityManager->getRepository(Deuil::class)->loadDeuil($type);
+
+        if (is_null($deuil)) {
+            return new JsonResponse([
+                'content' => '',
+                'endDate' => '',
+                'ref' => time()
+            ]);
+        }
+
         $content = $this->utilsService->htmlDecode($deuil->getContent());
         
         $ref = time();
