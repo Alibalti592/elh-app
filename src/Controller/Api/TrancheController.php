@@ -259,20 +259,33 @@ public function create(Request $request): JsonResponse
             return $name !== '' ? $name : 'Utilisateur';
         };
 
+        // Détermine si ce versement finalise le remboursement
+        $willFullyRefund = abs($requestedAmount - $currentRemaining) < 0.00001;
+
         if ($obligationCreator && $currentUser && $currentUser->getId() === $obligationCreator->getId()) {
             // creator is acting
             $sendToUser = $relatedToEntity;
             if ($type === 'jed') {
-                $title = 'Un nouveau remboursement partiel a été ajouté';
-                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                if ($willFullyRefund) {
+                    $title = '🎉 Remboursement finalisé !';
+                    $message = "🤲 ".$fullName($currentUser)." vient d'effectuer le dernier versement pour finaliser le remboursement de votre dette. C'est terminé, tout est remboursé !";
+                } else {
+                    $title = 'Un nouveau remboursement partiel a été ajouté';
+                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                }
                 $payload = [
                     'trancheId' => $tranche->getId(),
                     'obligationId' => $obligation->getId(),
                     'status' => 'accept',
                 ];
             } else {
-                $title = 'Un nouveau remboursement partiel a été proposé';
-                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                if ($willFullyRefund) {
+                    $title = '🎉 Demande de versement final reçue';
+                    $message = "🤲 ".$fullName($currentUser)." a proposé un versement pour finaliser le remboursement de votre prêt. Valide-le pour clôturer la dette !";
+                } else {
+                    $title = 'Un nouveau remboursement partiel a été proposé';
+                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                }
                 $payload = [
                     'trancheId' => $tranche->getId(),
                     'obligationId' => $obligation->getId(),
@@ -283,16 +296,26 @@ public function create(Request $request): JsonResponse
             // related user is acting
             $sendToUser = $obligationCreator;
             if ($type === 'onm') {
-                $title = 'Un nouveau remboursement partiel a été ajouté';
-                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                if ($willFullyRefund) {
+                    $title = '🎉 Remboursement finalisé !';
+                    $message = "🤲 ".$fullName($currentUser)." vient d'effectuer le dernier versement pour finaliser le remboursement de votre prêt. C'est terminé, tout est remboursé !";
+                } else {
+                    $title = 'Un nouveau remboursement partiel a été ajouté';
+                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                }
                 $payload = [
                     'trancheId' => $tranche->getId(),
                     'obligationId' => $obligation->getId(),
                     'status' => 'accept',
                 ];
             } else {
-                $title = 'Un nouveau remboursement partiel a été proposé';
-                $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                if ($willFullyRefund) {
+                    $title = '🎉 Demande de versement final reçue';
+                    $message = "🤲 ".$fullName($currentUser)." a proposé un versement pour finaliser le remboursement de votre dette. Valide-le pour clôturer définitivement !";
+                } else {
+                    $title = 'Un nouveau remboursement partiel a été proposé';
+                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                }
                 $payload = [
                     'trancheId' => $tranche->getId(),
                     'obligationId' => $obligation->getId(),
