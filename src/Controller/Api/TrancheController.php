@@ -33,6 +33,15 @@ class TrancheController extends AbstractController
         $this->fcmNotificationService = $fcmNotificationService;
     }
 
+    private function getUserFullName(?User $user): string
+    {
+        if (!$user) return 'Utilisateur';
+        $fn = method_exists($user, 'getFirstName') ? (string)$user->getFirstName() : (method_exists($user, 'getFirstname') ? (string)$user->getFirstname() : '');
+        $ln = method_exists($user, 'getLastName')  ? (string)$user->getLastName()  : (method_exists($user, 'getLastname')  ? (string)$user->getLastname()  : '');
+        $name = trim($fn . ' ' . $ln);
+        return $name !== '' ? $name : 'Utilisateur';
+    }
+
     private function ackActionRequiredTrancheNotifications(User $user, int $trancheId): void
     {
         $pendingNotifs = $this->entityManager
@@ -251,14 +260,6 @@ public function create(Request $request): JsonResponse
         $message = '';
         $payload = [];
 
-        $fullName = function (?User $u): string {
-            if (!$u) return 'Utilisateur';
-            $fn = method_exists($u, 'getFirstName') ? (string)$u->getFirstName() : (method_exists($u, 'getFirstname') ? (string)$u->getFirstname() : '');
-            $ln = method_exists($u, 'getLastName')  ? (string)$u->getLastName()  : (method_exists($u, 'getLastname')  ? (string)$u->getLastname()  : '');
-            $name = trim($fn.' '.$ln);
-            return $name !== '' ? $name : 'Utilisateur';
-        };
-
         // Détermine si ce versement finalise le remboursement
         $willFullyRefund = abs($requestedAmount - $currentRemaining) < 0.00001;
 
@@ -266,12 +267,13 @@ public function create(Request $request): JsonResponse
             // creator is acting
             $sendToUser = $relatedToEntity;
             if ($type === 'jed') {
+                // Creditor (Hedy) acting on "Saliha owes Hedy" -> Auto-accepted
                 if ($willFullyRefund) {
                     $title = '🎉 Remboursement finalisé !';
-                    $message = "🤲 ".$fullName($currentUser)." vient d'effectuer le dernier versement pour finaliser le remboursement de votre dette. C'est terminé, tout est remboursé !";
+                    $message = "🤲 El hamdoulilah, " . $this->getUserFullName($currentUser) . " a saisis un versement qui solde votre dette. Elle apparaît désormais comme remboursée.";
                 } else {
                     $title = 'Un nouveau remboursement partiel a été ajouté';
-                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                    $message = "🩶Bonne nouvelle " . $this->getUserFullName($currentUser) . " vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
                 }
                 $payload = [
                     'trancheId' => $tranche->getId(),
@@ -279,29 +281,31 @@ public function create(Request $request): JsonResponse
                     'status' => 'accept',
                 ];
             } else {
+                // Debtor (Hedy) acting on "Hedy owes Saliha" -> Needs validation
                 if ($willFullyRefund) {
                     $title = '🎉 Demande de versement final reçue';
-                    $message = "🤲 ".$fullName($currentUser)." a proposé un versement pour finaliser le remboursement de votre prêt. Valide-le pour clôturer la dette !";
+                    $message = "🤲 El hamdoulilah, " . $this->getUserFullName($currentUser) . " a proposé un versement qui solde sa dette. Merci de le valider.";
                 } else {
                     $title = 'Un nouveau remboursement partiel a été proposé';
-                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                    $message = "🩶Bonne nouvelle " . $this->getUserFullName($currentUser) . " vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
                 }
                 $payload = [
                     'trancheId' => $tranche->getId(),
                     'obligationId' => $obligation->getId(),
-                    'actions' => ['accept','decline'],
+                    'actions' => ['accept', 'decline'],
                 ];
             }
         } else {
             // related user is acting
             $sendToUser = $obligationCreator;
             if ($type === 'onm') {
+                // Creditor (Saliha) acting on "Hedy owes Saliha" -> Auto-accepted
                 if ($willFullyRefund) {
                     $title = '🎉 Remboursement finalisé !';
-                    $message = "🤲 ".$fullName($currentUser)." vient d'effectuer le dernier versement pour finaliser le remboursement de votre prêt. C'est terminé, tout est remboursé !";
+                    $message = "🤲 El hamdoulilah, " . $this->getUserFullName($currentUser) . " a saisis un versement qui solde votre dette. Elle apparaît désormais comme remboursée.";
                 } else {
                     $title = 'Un nouveau remboursement partiel a été ajouté';
-                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
+                    $message = "🩶Bonne nouvelle " . $this->getUserFullName($currentUser) . " vient de noter un remboursement partiel d'un emprunt convenu entre vous. Consulte-le !🤲";
                 }
                 $payload = [
                     'trancheId' => $tranche->getId(),
@@ -309,17 +313,18 @@ public function create(Request $request): JsonResponse
                     'status' => 'accept',
                 ];
             } else {
+                // Debtor (Saliha) acting on "Saliha owes Hedy" -> Needs validation
                 if ($willFullyRefund) {
                     $title = '🎉 Demande de versement final reçue';
-                    $message = "🤲 ".$fullName($currentUser)." a proposé un versement pour finaliser le remboursement de votre dette. Valide-le pour clôturer définitivement !";
+                    $message = "🤲 El hamdoulilah, " . $this->getUserFullName($currentUser) . " a proposé un versement qui solde sa dette. Merci de le valider.";
                 } else {
                     $title = 'Un nouveau remboursement partiel a été proposé';
-                    $message = "🩶Bonne nouvelle ".$fullName($currentUser)." vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
+                    $message = "🩶Bonne nouvelle " . $this->getUserFullName($currentUser) . " vient de noter un remboursement partiel d'un prêt convenu entre vous. Consulte-le !🤲";
                 }
                 $payload = [
                     'trancheId' => $tranche->getId(),
                     'obligationId' => $obligation->getId(),
-                    'actions' => ['accept','decline'],
+                    'actions' => ['accept', 'decline'],
                 ];
             }
         }
@@ -448,6 +453,29 @@ public function create(Request $request): JsonResponse
             $tranche->setStatus('tranche accepte');
             $obligation->setRemainingAmount($newRemainingAmount);
             $this->syncObligationRefundStatus($obligation);
+
+            // Notification pour le dernier versement accepté
+            if (abs($newRemainingAmount) < 0.00001) {
+                $sendTo = $tranche->getEmprunteur();
+                if ($sendTo) {
+                    $notif = new NotifToSend();
+                    $notif->setUser($sendTo);
+                    $notif->setTitle('🎉 Versement final validé');
+                    $notif->setMessage("El hamdoulilah, " . $this->getUserFullName($currentUser) . " a validé un versement qui solde ta dette. Elle apparaît désormais comme remboursée.");
+                    $notif->setDatas(json_encode([
+                        'trancheId' => $tranche->getId(),
+                        'obligationId' => $obligation->getId(),
+                        'status' => 'accept',
+                    ], JSON_UNESCAPED_UNICODE));
+                    $notif->setStatus('pending');
+                    $notif->setSendAt(new \DateTime());
+                    $notif->setType('tranche');
+                    $notif->setView('tranche');
+                    $notif->setIsRead(false);
+
+                    $this->entityManager->persist($notif);
+                }
+            }
         } elseif ($response === 'decline') {
             $tranche->setStatus('tranche refuse');
             $this->syncObligationRefundStatus($obligation);
