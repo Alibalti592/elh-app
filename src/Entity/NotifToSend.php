@@ -77,7 +77,7 @@ class NotifToSend
         $this->setUser($currentUser);
         $prayKey = (string) ($praytimeUI['key'] ?? '');
         if ($prayKey === 'chorouq') {
-            $this->setTitle("🔔 Plus que 15 minutes pour chourouk");
+            $this->setTitle("🔔 Plus que 15 minutes avant le lever du soleil (Chorouq)");
             $this->setMessage("Le réveil est dur, mais la bénédiction est tellement grande. Allez, motive-toi ! 🤍");
         } else {
             $this->setTitle("Rappel de prière");
