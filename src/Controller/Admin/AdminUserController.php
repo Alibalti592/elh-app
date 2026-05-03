@@ -148,4 +148,37 @@ class AdminUserController extends AbstractController
         $this->userService->deleteUserAccount($user);
         return $jsonResponse;
     }
+
+    #[Route('/v-admin-users-export-csv', name: 'admin_user_export_csv')]
+    public function exportCsv(): Response
+    {
+        $users = $this->entityManager->getRepository(User::class)->findBy(['deletedAt' => null], ['createAt' => 'DESC']);
+
+        $handle = fopen('php://memory', 'r+');
+        fputcsv($handle, ['ID', 'Prenom', 'Nom', 'Email', 'Telephone', 'Date inscription', 'Derniere connexion', 'Statut', 'Auth']);
+
+        foreach ($users as $user) {
+            fputcsv($handle, [
+                $user->getId(),
+                $user->getFirstname(),
+                $user->getLastname(),
+                $user->getEmail(),
+                $user->getPhonePrefix() . $user->getPhone(),
+                $user->getCreateAt() ? $user->getCreateAt()->format('d/m/Y H:i') : '-',
+                $user->getLastLogin() ? $user->getLastLogin()->format('d/m/Y H:i') : '-',
+                $user->isEnabled() ? 'Actif' : 'Bloqué',
+                $user->getAuthProvider()
+            ]);
+        }
+
+        rewind($handle);
+        $content = stream_get_contents($handle);
+        fclose($handle);
+
+        $response = new Response($content);
+        $response->headers->set('Content-Type', 'text/csv; charset=utf-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="users_export_'.date('d-m-Y').'.csv"');
+
+        return $response;
+    }
 }

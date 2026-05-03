@@ -48,6 +48,8 @@ class AdminPushNotificationController extends AbstractController
         'maraude_view' => 'Maraude',
         'todo_view' => 'Todo / Tâches',
         'feedback_view' => 'Avis / Critiques',
+        // ── Liens ──
+        'external_link' => '🌐 Lien externe (Web, Youtube, ...)',
     ];
 
     public function __construct(private readonly EntityManagerInterface $entityManager)
@@ -71,6 +73,7 @@ class AdminPushNotificationController extends AbstractController
         $message = trim((string) $request->get('message'));
         $view = (string) $request->get('view', '');
         $view = array_key_exists($view, self::VIEW_OPTIONS) ? $view : '';
+        $link = trim((string) $request->get('link', ''));
 
         if ($title === '' || $message === '') {
             $this->addFlash('error', 'Titre et message sont obligatoires.');
@@ -102,6 +105,9 @@ class AdminPushNotificationController extends AbstractController
             $notif->setIsRead(false);
             if ($view !== '') {
                 $notif->setView($view);
+                if ($view === 'external_link' && $link !== '') {
+                    $notif->setDatas(json_encode(['link' => $link]));
+                }
             }
             $this->entityManager->persist($notif);
             $count++;

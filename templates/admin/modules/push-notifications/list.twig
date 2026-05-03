@@ -25,6 +25,10 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        <div id="url-container" class="form-group mb-3" style="display: none;">
+                            <label for="push-url">URL externe (Youtube, Web, etc.)</label>
+                            <input id="push-url" class="form-control" type="url" name="link" placeholder="https://www.youtube.com/watch?v=...">
+                        </div>
                         <button class="btn btn-primary" type="submit">Envoyer à tous les utilisateurs</button>
                     </form>
                 </div>
@@ -44,5 +48,14 @@
 {% endblock %}
 
 {% block part_js %}
-
+    <script>
+        document.getElementById('push-view').addEventListener('change', function() {
+            var urlContainer = document.getElementById('url-container');
+            if (this.value === 'external_link') {
+                urlContainer.style.display = 'block';
+            } else {
+                urlContainer.style.display = 'none';
+            }
+        });
+    </script>
 {% endblock %}
