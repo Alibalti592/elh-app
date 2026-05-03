@@ -90,7 +90,7 @@ class SiteController extends AbstractController
                     <meta charset="UTF-8">
                     <title>Muslim Connect</title>
                     <meta property="og:title" content="Muslim Connect" />
-                    <meta property="og:description" content="La solution digitale 100% gratuite pour organiser, préserver et transmettre vos engagements et dernières volontés." />
+                    <meta property="og:description" content="Telecharge Muslim Connect la solution digitale 100% gratuite pour organiser, préserver et transmettre en toute sérénité tes engagements, tes dettes et tes dernières volontés. Pour que tout soit clair… même après ton départ." />
                     <meta property="og:image" content="'.$imageUrl.'" />
                     <meta property="og:type" content="website" />
                     <meta name="twitter:card" content="summary_large_image">
