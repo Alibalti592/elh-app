@@ -69,50 +69,53 @@ class SiteController extends AbstractController
     }
 
     #[Route('/app', name: 'smart_app_redirect', methods: ['GET'])]
-public function appSmartRedirect(Request $request): RedirectResponse
-{
-    // 🔧 Put your real store URLs here
-    $iosUrl     = 'https://apps.apple.com/us/app/muslim-connect/id6478540540'; // e.g., https://apps.apple.com/app/id1234567890
-    $androidUrl = 'https://play.google.com/store/apps/details?id=com.elh.app&pli=1';
+    public function appSmartRedirect(Request $request): Response
+    {
+        $iosUrl     = 'https://apps.apple.com/us/app/muslim-connect/id6478540540';
+        $androidUrl = 'https://play.google.com/store/apps/details?id=com.elh.app&pli=1';
 
-    // Optional: allow manual override with ?platform=ios | android (useful for testing/QRs)
-    // $override = strtolower((string) $request->query->get('platform', ''));
-    // if ($override === 'ios') {
-    //     return new RedirectResponse($iosUrl, 302, [
-    //         'Cache-Control' => 'no-store, no-cache, must-revalidate',
-    //         'Pragma'        => 'no-cache',
-    //     ]);
-    // }
-    // if ($override === 'android') {
-    //     return new RedirectResponse($androidUrl, 302, [
-    //         'Cache-Control' => 'no-store, no-cache, must-revalidate',
-    //         'Pragma'        => 'no-cache',
-    //     ]);
-    // }
+        $ua = strtolower($request->headers->get('User-Agent', ''));
 
-    // Simple User-Agent detection
-    $ua = strtolower($request->headers->get('User-Agent', ''));
+        // 1. Détecter si c'est un bot (réseaux sociaux pour l'aperçu)
+        $isBot = preg_match('/bot|crawl|slurp|spider|facebookexternalhit|snapchat|whatsapp|link|twitter/i', $ua);
 
-    $isAndroid = str_contains($ua, 'android');
-    $isIOS     = str_contains($ua, 'iphone') || str_contains($ua, 'ipad') || str_contains($ua, 'ipod');
+        if ($isBot) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+            $imageUrl = $baseUrl . '/images/logo-full-bg.png';
+            
+            return new Response('
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Muslim Connect</title>
+                    <meta property="og:title" content="Muslim Connect" />
+                    <meta property="og:description" content="La solution digitale 100% gratuite pour organiser, préserver et transmettre vos engagements et dernières volontés." />
+                    <meta property="og:image" content="'.$imageUrl.'" />
+                    <meta property="og:type" content="website" />
+                    <meta name="twitter:card" content="summary_large_image">
+                </head>
+                <body>
+                    <p>Redirection vers l\'application...</p>
+                    <script>
+                        // Au cas où un humain arrive ici sans être redirigé par le serveur
+                        window.location.href = (navigator.userAgent.match(/iPhone|iPad|iPod/i)) ? "'.$iosUrl.'" : "'.$androidUrl.'";
+                    </script>
+                </body>
+                </html>
+            ');
+        }
 
-    $target = $isAndroid ? $androidUrl : ($isIOS ? $iosUrl : null);
+        // 2. Détection de l'OS pour les utilisateurs réels
+        $isAndroid = str_contains($ua, 'android');
+        $isIOS     = str_contains($ua, 'iphone') || str_contains($ua, 'ipad') || str_contains($ua, 'ipod');
 
-    // If we couldn't detect, you can either:
-    // 1) default to a small landing page with both links, or
-    // 2) pick one (commonly Android) as default.
-    if (!$target) {
-        // Option A: default to a landing page you host (uncomment and set path)
-        // return $this->redirectToRoute('home'); // or render a page with both links
+        $target = $isIOS ? $iosUrl : $androidUrl;
 
-        // Option B: default to Android (change if you prefer iOS)
-        $target = $androidUrl;
+        return new RedirectResponse($target, 302, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma'        => 'no-cache',
+        ]);
     }
-
-    return new RedirectResponse($target, 302, [
-        'Cache-Control' => 'no-store, no-cache, must-revalidate',
-        'Pragma'        => 'no-cache',
-    ]);
-}
 
 }
