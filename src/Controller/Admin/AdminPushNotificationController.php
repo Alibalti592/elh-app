@@ -17,37 +17,37 @@ class AdminPushNotificationController extends AbstractController
     private const VIEW_OPTIONS = [
         '' => 'Aucune redirection',
         // ── Principales ──
-        'home_view' => '🏠 Accueil',
-        'pray' => '🕌 Prière (Accueil)',
-        'priere_view' => '🕌 Prière (page dédiée)',
-        'qiblah_view' => '🧭 Direction de la Qibla',
+        'home_view' => 'Accueil',
+       
+        'priere_view' => 'Prière (page dédiée)',
+        'qiblah_view' => 'Direction de la Qibla',
         // ── Social ──
-        'chatview' => '💬 Chat',
-        'new_friend' => '👥 Relations / Amis',
+        'chatview' => 'Chat',
+        'new_friend' => 'Relations / Amis',
         // ── Finances ──
-        'obligation_list_view' => '💰 Dettes (Je dois)',
-        'jed_view' => '💰 Dettes (On me doit)',
-        'amana_view' => '🔑 Amanas',
-        'tranche' => '📋 Tranches / versements',
+        'obligation_list_view' => 'Dettes (Je dois)',
+        'jed_view' => 'Dettes (On me doit)',
+        'amana_view' => 'Amanas',
+       
         // ── Testament ──
-        'my_testament_view' => '📜 Mon Testament',
-        'shared_testament' => '📜 Testament partagé',
-        'jeunramadan' => '🌙 Jours de jeûne à rattraper',
+        'my_testament_view' => 'Mon Testament',
+        
+        'jeunramadan' => 'Jours de jeûne à rattraper',
         // ── Deuil ──
-        'deuil_view' => '🕊️ Calcul de la période de deuil',
+        'deuil_view' => 'Calcul de la période de deuil',
         // ── Mosquée & Salat ──
-        'mosque_notif_view' => '🕌 Mosquée',
-        'salat_view' => '📿 Mes Salats',
+       
+        'salat_view' => 'Mes Salats',
         // ── Don ──
-        'don_view' => '❤️ Faire un don',
+        'don_view' => 'Faire un don',
         // ── Cartes & Pardon ──
-        'carte_list_view' => '🎴 Cartes',
-        'pardon_view' => '🤲 Pardon / Décès',
+        'carte_list_view' => 'Cartes',
+        'pardon_view' => 'Pardon / Décès',
         // ── Autres ──
-        'pompe_noitif_view' => '🏥 Pompe funèbre',
-        'maraude_view' => '🤝 Maraude',
-        'todo_view' => '✅ Todo / Tâches',
-        'feedback_view' => '⭐ Avis / Critiques',
+        'pompe_noitif_view' => 'Pompe funèbre',
+        'maraude_view' => 'Maraude',
+        'todo_view' => 'Todo / Tâches',
+        'feedback_view' => 'Avis / Critiques',
     ];
 
     public function __construct(private readonly EntityManagerInterface $entityManager)
