@@ -352,6 +352,19 @@ class AdminNavPageController extends AbstractController
             $this->entityManager->flush();
         }
 
+        $pageKey = 'soutenir-app';
+        $page = $this->entityManager->getRepository(NavPageContent::class)->findOneBy([
+            'slug' => $pageKey
+        ]);
+        if(is_null($page)) {
+            $page = new NavPageContent();
+            $page->setContent('Votre soutien est précieux. Grâce à vos dons, nous pouvons continuer à développer Muslim Connect.');
+            $page->setTitle('🤲 Soutenir l\'application');
+            $page->setSlug($pageKey);
+            $this->entityManager->persist($page);
+            $this->entityManager->flush();
+        }
+
         $jsonResponse = new JsonResponse();
         $jsonResponse->setData([]);
         return $jsonResponse;
