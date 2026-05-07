@@ -50,6 +50,7 @@ class AdminNavPageController extends AbstractController
     public function loadList(Request $request): Response
     {
         $this->ensureRamadanPageExists();
+        $this->iniNewPage(); // Force la création de la page soutenir-app si elle n'existe pas
         $crudParams = $this->CRUDService->getListParametersFromRequest($request);
         $pages = $this->entityManager->getRepository(NavPageContent::class)->findListFiltered($crudParams);
         $count = $this->entityManager->getRepository(NavPageContent::class)->countListFiltered($crudParams);
