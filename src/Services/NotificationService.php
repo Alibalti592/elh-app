@@ -395,7 +395,11 @@ class NotificationService
         if ($relatedTo instanceof User) {
             $typeForRelated = $this->getObligationTypeForRecipient($type, $relatedTo, $createdBy, $relatedTo);
             $data['type'] = $typeForRelated;
-            $titleMessage = $this->getTitleMessageForObligationType($typeForRelated, $borrowerName, $lenderName, $actorName, $otherName);
+            // Les noms sont du point de vue du créateur.
+            // Pour le relatedTo, le type est inversé (jed↔onm), donc on swap borrower/lender.
+            $borrowerNameForRelated = $lenderName;
+            $lenderNameForRelated   = $borrowerName;
+            $titleMessage = $this->getTitleMessageForObligationType($typeForRelated, $borrowerNameForRelated, $lenderNameForRelated, $actorName, $otherName);
             $this->createSentNotif($relatedTo, $titleMessage['title'], $titleMessage['message'], $data['view'], 'obligation_echeance', $data);
             $this->fcmNotificationService->sendFcmDefaultNotification($relatedTo, $titleMessage['title'], $titleMessage['message'], $data);
         }
