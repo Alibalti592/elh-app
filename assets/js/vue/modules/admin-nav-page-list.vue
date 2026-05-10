@@ -70,8 +70,8 @@
           </div>
 
           <div class="form-group mt-3">
-            <label for="name">Identifiant ou lien vidéo Youtube</label>
-            <input type="text" class="form-control" v-model="pageEdit.video" id="video">
+            <label for="video">URL du bouton d'action <small class="text-muted">(lien ouvert lors du clic sur le bouton dans l'app)</small></label>
+            <input type="text" class="form-control" v-model="pageEdit.video" id="video" placeholder="https://...">
           </div>
 
           <div class="text-center mt-4">
