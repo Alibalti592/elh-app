@@ -366,6 +366,33 @@ class AdminNavPageController extends AbstractController
             $this->entityManager->flush();
         }
 
+        $pageKey = 'don';
+        $page = $this->entityManager->getRepository(NavPageContent::class)->findOneBy(['slug' => $pageKey]);
+        if(!is_null($page) && $page->getTitle() != 'Adoration') {
+            $page->setTitle('Adoration');
+            $this->entityManager->persist($page);
+            $this->entityManager->flush();
+        }
+
+        $pageKey = 'ramadan';
+        $page = $this->entityManager->getRepository(NavPageContent::class)->findOneBy(['slug' => $pageKey]);
+        if(!is_null($page) && $page->getTitle() != 'Action en cours') {
+            $page->setTitle('Action en cours');
+            $this->entityManager->persist($page);
+            $this->entityManager->flush();
+        }
+
+        $pageKey = 'orphelin';
+        $page = $this->entityManager->getRepository(NavPageContent::class)->findOneBy(['slug' => $pageKey]);
+        if(is_null($page)) {
+            $page = new NavPageContent();
+            $page->setContent('À saisir contenu Parrainer un orphelin');
+            $page->setTitle('Parrainer un orphelin');
+            $page->setSlug($pageKey);
+            $this->entityManager->persist($page);
+            $this->entityManager->flush();
+        }
+
         $jsonResponse = new JsonResponse();
         $jsonResponse->setData([]);
         return $jsonResponse;
