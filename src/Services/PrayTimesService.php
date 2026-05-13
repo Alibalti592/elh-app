@@ -392,6 +392,11 @@ class PrayTimesService
             ];
         }
 
+        // Trier par timestamp UTC croissant pour que le compteur Flutter
+        // (qui prend la 1ère prière future dans l'ordre) soit toujours correct,
+        // peu importe le fuseau horaire de l'utilisateur (Chine, Canada, etc.)
+        usort($praytimesUI, fn($a, $b) => $a['timestamp'] <=> $b['timestamp']);
+
         return $praytimesUI;
     }
 

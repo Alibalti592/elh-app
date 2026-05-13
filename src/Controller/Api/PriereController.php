@@ -94,7 +94,7 @@ class PriereController extends AbstractController
         if(!is_null($lastTimestamprpay)) {
             $now = new \DateTime('now');
             if($lastTimestamprpay <= $now->getTimestamp()) {
-                $tomorrow =  new \DateTime('tomorrow');
+                $tomorrow = new \DateTime('tomorrow');
                 if($currentUser instanceof User) {
                     $praytimesUI = $this->prayTimesService->getPrayTimesOfDay($currentUser, $tomorrow);
                 } else {
@@ -102,11 +102,11 @@ class PriereController extends AbstractController
                 }
                 $resolvedCity = $this->prayTimesService->getLastResolvedCityKey();
                 $praytimeUI = [
-                    'location' => $this->locationUI->getLocation($userLocation),
-                    'date' =>   $today->format('d/m/Y'),
-                    'dateMuslim' => $todayMuslimString,
-                    'prieres' => $praytimesUI,
-                    'resolvedCity' => $resolvedCity
+                    'location'    => $this->locationUI->getLocation($userLocation),
+                    'date'        => $tomorrow->format('d/m/Y'), // ← date correcte = demain
+                    'dateMuslim'  => $todayMuslimString,
+                    'prieres'     => $praytimesUI,
+                    'resolvedCity'=> $resolvedCity,
                 ];
             }
         }
