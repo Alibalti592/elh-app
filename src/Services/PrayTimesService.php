@@ -392,11 +392,10 @@ class PrayTimesService
             ];
         }
 
-        // Trier par timestamp UTC croissant pour que le compteur Flutter
-        // (qui prend la 1ère prière future dans l'ordre) soit toujours correct,
-        // peu importe le fuseau horaire de l'utilisateur (Chine, Canada, etc.)
-        usort($praytimesUI, fn($a, $b) => $a['timestamp'] <=> $b['timestamp']);
-
+        // Les prières sont retournées dans l'ordre canonique (Fajr → Chorouq → Duhur → Asr → Maghrib → Isha).
+        // Avec le bon fuseau horaire (calculé depuis la longitude), leurs timestamps UTC
+        // sont naturellement croissants, donc l'app Flutter sélectionne correctement
+        // la prochaine prière sans tri supplémentaire.
         return $praytimesUI;
     }
 
@@ -471,6 +470,7 @@ class PrayTimesService
 
     private function resolveTimezone(Location $location): \DateTimeZone
     {
+        // 1) Timezone explicite fourni par l'app (le plus fiable)
         $timezone = $location->getTimezone();
         if (is_string($timezone) && $timezone !== '') {
             try {
@@ -479,12 +479,29 @@ class PrayTimesService
             }
         }
 
+        // 2) France → Europe/Paris (heure d'été gérée automatiquement)
         $countryKey = $this->normalizeLocationKey($location->getCountry());
         if ($countryKey === 'france') {
             return new \DateTimeZone('Europe/Paris');
         }
 
-        return new \DateTimeZone('Etc/GMT-2');
+        // 3) Dériver le fuseau depuis la longitude (précision ±30 min)
+        //    Couvre tous les autres pays sans bibliothèque externe.
+        //    Convention POSIX inversée : Etc/GMT-8 = UTC+8
+        $lng = $location->getLng();
+        if ($lng !== null) {
+            $offsetHours = (int) round($lng / 15);
+            $offsetHours = max(-12, min(14, $offsetHours));
+            // Etc/GMT±N : signe inversé par rapport à UTC
+            $tzName = 'Etc/GMT' . ($offsetHours >= 0 ? '-' : '+') . abs($offsetHours);
+            try {
+                return new \DateTimeZone($tzName);
+            } catch (\Throwable $e) {
+            }
+        }
+
+        // 4) Dernier recours : UTC
+        return new \DateTimeZone('UTC');
     }
 
     public function getLastResolvedCityKey(): ?string
