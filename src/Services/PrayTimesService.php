@@ -355,8 +355,15 @@ class PrayTimesService
             }
         }
 
+        // $tz = fuseau horaire réel de la location (UTC+8 pour Chine, etc.)
+        // Utilisé pour calculer des timestamps UTC corrects.
         $tz = $this->currentTimezone ?? $this->resolveTimezone($location);
         $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+
+        // L'app Flutter utilise adjustTimeForParis() qui suppose que le champ 'time'
+        // est exprimé en heure de Paris (Europe/Paris). On convertit donc chaque
+        // heure de prière dans ce fuseau avant de la retourner.
+        $parisTz = new \DateTimeZone('Europe/Paris');
 
         $keep = [0, 1, 2, 3, 5, 6];
 
@@ -383,19 +390,20 @@ class PrayTimesService
 
             $target = $map[$index];
 
+            // Heure en heure de Paris (pour adjustTimeForParis côté Flutter)
+            $parisTimeStr = $prayDate->setTimezone($parisTz)->format('H:i');
+
             $praytimesUI[] = [
-                'time'       => $timeStr,
-                'timestamp'  => $prayDate->getTimestamp(),
+                'time'       => $parisTimeStr,           // Heure Paris → Flutter convertit vers fuseau local
+                'timestamp'  => $prayDate->getTimestamp(), // UTC → countdown correct partout
                 'label'      => self::prays[$target]['label'],
                 'key'        => self::prays[$target]['key'],
                 'isNotified' => in_array(self::prays[$target]['key'], $praysN, true),
             ];
         }
 
-        // Les prières sont retournées dans l'ordre canonique (Fajr → Chorouq → Duhur → Asr → Maghrib → Isha).
-        // Avec le bon fuseau horaire (calculé depuis la longitude), leurs timestamps UTC
-        // sont naturellement croissants, donc l'app Flutter sélectionne correctement
-        // la prochaine prière sans tri supplémentaire.
+        // L'ordre canonique (Fajr → Chorouq → Duhur → Asr → Maghrib → Isha) est préservé.
+        // Grâce au bon fuseau horaire, les timestamps sont naturellement croissants en UTC.
         return $praytimesUI;
     }
 
