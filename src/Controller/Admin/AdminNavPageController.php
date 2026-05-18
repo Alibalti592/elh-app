@@ -30,7 +30,7 @@ class AdminNavPageController extends AbstractController
         if (is_null($page)) {
             $page = new NavPageContent();
             $page->setContent('À saisir');
-            $page->setTitle('Ramadan 2026');
+            $page->setTitle('Actions du moment');
             $page->setSlug('ramadan');
             $this->entityManager->persist($page);
             $this->entityManager->flush();
@@ -288,7 +288,7 @@ class AdminNavPageController extends AbstractController
         if(is_null($page)) {
             $page = new NavPageContent();
             $page->setContent('À saisir');
-            $page->setTitle('Ramadan 2026');
+            $page->setTitle('Actions du moment');
             $page->setSlug($pageKey);
             $this->entityManager->persist($page);
             $this->entityManager->flush();
