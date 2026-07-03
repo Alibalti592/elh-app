@@ -377,6 +377,7 @@ class PrayTimesService
         ];
 
         $praytimesUI = [];
+        $previousPrayDate = null;
         foreach ($praytimes as $index => $timeStr) {
             if (!in_array($index, $keep, true)) {
                 continue;
@@ -387,6 +388,11 @@ class PrayTimesService
             if (!$prayDate) {
                 continue;
             }
+            // High-latitude Isha can cross midnight; keep prayer instants monotonic.
+            while ($previousPrayDate instanceof \DateTimeImmutable && $prayDate <= $previousPrayDate) {
+                $prayDate = $prayDate->modify('+1 day');
+            }
+            $previousPrayDate = $prayDate;
 
             $target = $map[$index];
 
