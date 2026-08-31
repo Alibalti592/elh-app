@@ -303,6 +303,7 @@ Calculating remaining balances
 Integrating Firebase services
 Managing communication between mobile and backend components
 Structuring backend entities and database relationships
+
 🚀 Future Improvements
 
 Potential improvements include:
@@ -315,11 +316,6 @@ Expanding mobile UI/UX
 Improving deployment and CI/CD automation
 
 
-👨‍💻 Author
- 
-Ali Balti
-
-Junior Mobile Developer — Flutter & Symfony Full-Stack
 
 Software Engineering Graduate
 
