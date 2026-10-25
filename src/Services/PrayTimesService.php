@@ -422,7 +422,17 @@ class PrayTimesService
         [$timezone, $tz] = $this->resolveTimezoneData($userLocation, $timestampday);
         $this->currentTimezone = $tz;
 
-        return $this->getPrayerTimes($timestampday, $lat, $lng, $timezone);
+        // Date du jour dans le fuseau de la location (et non celui du serveur)
+        $localDay = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+
+        return $this->getDatePrayerTimes(
+            (int) $localDay->format('Y'),
+            (int) $localDay->format('n'),
+            (int) $localDay->format('j'),
+            $lat,
+            $lng,
+            $timezone
+        );
     }
 
     private function configureCalculationForLocation(Location $location, int $timestamp): void
@@ -475,7 +485,10 @@ class PrayTimesService
     private function resolveTimezoneData(Location $location, int $timestampday): array
     {
         $tz = $this->resolveTimezone($location);
-        $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
+        // Offset UTC évalué à midi local du jour demandé : l'offset de l'instant
+        // courant serait faux le jour du changement d'heure (ex. avant 3h le
+        // dernier dimanche d'octobre, il vaudrait encore l'heure d'été) → décalage 1h.
+        $day = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz)->setTime(12, 0);
         $offsetSeconds = $tz->getOffset($day);
         $timezone = $offsetSeconds / 3600.0;
 
