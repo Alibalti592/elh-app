@@ -360,10 +360,11 @@ class PrayTimesService
         $tz = $this->currentTimezone ?? $this->resolveTimezone($location);
         $date = (new \DateTimeImmutable('@' . $timestampday))->setTimezone($tz);
 
-        // L'app Flutter utilise adjustTimeForParis() qui suppose que le champ 'time'
-        // est exprimé en heure de Paris (Europe/Paris). On convertit donc chaque
-        // heure de prière dans ce fuseau avant de la retourner.
-        $parisTz = new \DateTimeZone('Europe/Paris');
+        // L'app Flutter (<= 1.1.9) utilise adjustTimeForParis() qui suppose que le champ
+        // 'time' est en heure de Paris, avec une heure d'été codée en dur du 31/03 au 31/10
+        // (au lieu des derniers dimanches de mars/octobre). On exprime donc 'time' avec
+        // l'offset que l'app croit être celui de Paris, pour qu'elle affiche l'heure exacte.
+        $parisTz = new \DateTimeZone($this->legacyAppParisOffset());
 
         $keep = [0, 1, 2, 3, 5, 6];
 
@@ -411,6 +412,20 @@ class PrayTimesService
         // L'ordre canonique (Fajr → Chorouq → Duhur → Asr → Maghrib → Isha) est préservé.
         // Grâce au bon fuseau horaire, les timestamps sont naturellement croissants en UTC.
         return $praytimesUI;
+    }
+
+    /**
+     * Offset de Paris tel que calculé par adjustTimeForParis() dans l'app Flutter :
+     * UTC+2 entre le 31/03 et le 31/10 (00:00 UTC), UTC+1 sinon.
+     */
+    private function legacyAppParisOffset(): string
+    {
+        $now = time();
+        $year = (int) gmdate('Y', $now);
+        $start = gmmktime(0, 0, 0, 3, 31, $year);
+        $end = gmmktime(0, 0, 0, 10, 31, $year);
+
+        return ($now > $start && $now < $end) ? '+02:00' : '+01:00';
     }
 
     public function getUserPrayTimes($userLocation, $timestampday)
